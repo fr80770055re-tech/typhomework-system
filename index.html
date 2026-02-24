@@ -3,110 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生作業管理系統 - 暖色護眼版</title>
+    <title>作業管理系統 - 電腦/手機雙優化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* 暖色調背景與佈局 */
         body { 
             height: 100vh; 
             overflow: hidden; 
             display: flex; 
             flex-direction: column; 
-            background-color: #fdf6e3; /* 暖米色背景 */
-            color: #5c4b37; /* 深褐文字 */
+            background-color: #fdf6e3; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
         }
-        .main-container { 
-            flex: 1; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            width: 98vw; 
-            border: 1px solid #e2d7bf;
-        }
+        .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; max-width: 1800px; margin: 0 auto; width: 100%; }
         
-        .table-wrapper { flex: 1; overflow: auto; border-radius: 0.75rem; background: #fffdf9; }
+        /* 表格滾動區域 */
+        .table-wrapper { flex: 1; overflow: auto; background: #fffdf9; border-top: 1px solid #e2d7bf; }
         
-        /* 深色化狀態按鈕 */
+        /* 按鈕設計：電腦/手機兼容 */
         .status-btn {
-            transition: all 0.15s ease;
+            transition: all 0.1s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 55px;
+            height: 65px;
             width: 100%;
-            border-radius: 0.6rem;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            position: relative;
         }
         
-        /* 狀態顏色：未交 -> 待訂正 -> 完成 */
-        .status-0 { background-color: #e2e8f0; color: #64748b; border: 2px solid #cbd5e1; } /* 暖灰 */
-        .status-1 { background-color: #f59e0b; color: #ffffff; border: 2px solid #d97706; } /* 飽和橙 (待訂正) */
-        .status-2 { background-color: #1d4ed8; color: #ffffff; border: 2px solid #1e3a8a; } /* 深藍 (完成) */
-        
-        .status-btn:active { transform: scale(0.92); }
+        /* 狀態文字大小 */
+        .btn-label-idx { position: absolute; top: 4px; left: 6px; font-size: 0.75rem; font-weight: 700; opacity: 0.6; }
+        .btn-label-status { font-size: 1.15rem; font-weight: 900; }
 
-        /* 表格固定效果 */
-        th { position: sticky; top: 0; background: #f5ede0; z-index: 20; border-bottom: 2px solid #e2d7bf; }
-        .sticky-idx { position: sticky; left: 0; background: #f5ede0; z-index: 10; border-right: 2px solid #e2d7bf; }
+        /* 顏色深色化 (暖色系) */
+        .status-0 { background-color: #e2e8f0; color: #475569; border: 1px solid #94a3b8; }
+        .status-1 { background-color: #f97316; color: #ffffff; border: 2px solid #ea580c; box-shadow: 0 2px 0 #9a3412; } /* 待訂正 */
+        .status-2 { background-color: #2563eb; color: #ffffff; border: 2px solid #1d4ed8; box-shadow: 0 2px 0 #1e3a8a; } /* 已完成 */
         
-        /* 報表區樣式 */
-        .report-card { background: #fff; border-left: 4px solid #d97706; padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        /* 電腦端懸停 */
+        @media (hover: hover) {
+            .status-btn:hover { filter: brightness(0.9); cursor: pointer; }
+        }
+
+        /* 響應式調整 */
+        @media (max-width: 640px) {
+            .btn-label-status { font-size: 1rem; }
+            .status-btn { height: 55px; }
+            th, td { padding: 0.25rem !important; }
+        }
+
+        th { position: sticky; top: 0; background: #f5ede0; z-index: 20; border-bottom: 2px solid #e2d7bf; font-weight: 900; }
+        .sticky-idx { position: sticky; left: 0; background: #f5ede0; z-index: 10; border-right: 2px solid #e2d7bf; font-weight: 900; }
     </style>
 </head>
-<body class="p-2 md:p-4">
+<body class="p-0 sm:p-2">
 
-    <div class="main-container bg-white shadow-2xl rounded-2xl">
+    <div class="main-container bg-white shadow-lg sm:rounded-2xl overflow-hidden">
         
-        <div class="p-4 bg-amber-900 text-amber-50 flex justify-between items-center shrink-0">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">📖</span>
-                <h1 class="font-bold text-lg tracking-tight">作業進度追蹤系統</h1>
-            </div>
+        <div class="px-4 py-3 bg-amber-950 text-white flex justify-between items-center shrink-0">
+            <h1 class="font-black text-lg">作業紀錄</h1>
             <div class="flex gap-2">
-                <button onclick="exportExcel()" class="bg-emerald-700 hover:bg-emerald-800 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg transition">導出報表</button>
-                <button onclick="clearAllData()" class="bg-amber-800 hover:bg-red-700 px-3 py-1.5 rounded-lg text-xs transition border border-amber-700">清空重設</button>
+                <button onclick="exportExcel()" class="bg-emerald-600 px-3 py-1.5 rounded-lg text-sm font-bold">Excel</button>
+                <button onclick="clearAllData()" class="text-amber-400 text-xs underline">重設</button>
             </div>
         </div>
 
-        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b shrink-0 bg-orange-50/50">
-            <div class="flex items-center gap-3">
-                <label class="text-sm font-black text-amber-800">學生人數：</label>
-                <input type="number" id="studentCount" value="5" class="w-20 p-2 border-2 border-amber-200 rounded-lg focus:border-amber-500 outline-none" onchange="saveAndRender()">
+        <div class="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 border-b bg-orange-50/50 shrink-0">
+            <div class="flex items-center justify-between sm:justify-start gap-3">
+                <label class="text-sm font-bold">人數:</label>
+                <input type="number" id="studentCount" value="5" class="w-20 p-2 border rounded-lg font-bold text-center" onchange="saveAndRender()">
+                <div class="text-xs text-gray-400 hidden sm:block">數據自動儲存</div>
             </div>
             <div class="flex gap-2">
-                <input type="text" id="taskName" placeholder="輸入新作業名稱" class="flex-1 p-2 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-500 outline-none">
-                <button onclick="addTask()" class="bg-amber-700 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-amber-800 transition">新增作業</button>
+                <input type="text" id="taskName" placeholder="作業名稱" class="flex-1 p-2 border rounded-lg text-sm font-bold">
+                <button onclick="addTask()" class="bg-amber-800 text-white px-4 rounded-lg font-bold text-sm">新增</button>
             </div>
         </div>
 
-        <div class="table-wrapper m-3">
+        <div class="table-wrapper">
             <table class="w-full border-collapse">
                 <thead>
                     <tr id="tableHeader">
-                        <th class="p-4 w-16 sticky-idx text-amber-900">座號</th>
+                        <th class="p-3 w-14 sticky-idx">#</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
         </div>
 
-        <div class="p-4 bg-orange-50 border-t grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0 overflow-y-auto max-h-48">
-            <div>
-                <h3 class="text-xs font-black text-slate-500 mb-2 flex items-center gap-1">
-                    <span class="w-2 h-2 bg-slate-400 rounded-full"></span> 尚未繳交名單
-                </h3>
-                <div id="missingReport" class="flex flex-col gap-1"></div>
+        <div class="p-4 bg-amber-50 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0 overflow-y-auto max-h-40">
+            <div class="bg-white/50 p-3 rounded-lg border border-amber-100">
+                <h3 class="text-xs font-black text-gray-500 mb-1">● 尚未繳交</h3>
+                <div id="missingReport" class="text-sm font-bold text-gray-700 leading-relaxed"></div>
             </div>
-            <div>
-                <h3 class="text-xs font-black text-amber-600 mb-2 flex items-center gap-1">
-                    <span class="w-2 h-2 bg-amber-500 rounded-full"></span> 待訂正名單
-                </h3>
-                <div id="correctionReport" class="flex flex-col gap-1"></div>
+            <div class="bg-white p-3 rounded-lg border border-orange-200 shadow-sm">
+                <h3 class="text-xs font-black text-orange-600 mb-1">● 待訂正</h3>
+                <div id="correctionReport" class="text-sm font-bold text-orange-800 leading-relaxed"></div>
             </div>
         </div>
     </div>
@@ -116,9 +110,9 @@
         let submissions = {}; 
 
         function init() {
-            const t = localStorage.getItem('v4_tasks');
-            const s = localStorage.getItem('v4_sub');
-            const c = localStorage.getItem('v4_count');
+            const t = localStorage.getItem('v6_tasks');
+            const s = localStorage.getItem('v6_sub');
+            const c = localStorage.getItem('v6_count');
             if (t) tasks = JSON.parse(t);
             if (s) submissions = JSON.parse(s);
             if (c) document.getElementById('studentCount').value = c;
@@ -126,9 +120,9 @@
         }
 
         function saveAndRender() {
-            localStorage.setItem('v4_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v4_sub', JSON.stringify(submissions));
-            localStorage.setItem('v4_count', document.getElementById('studentCount').value);
+            localStorage.setItem('v6_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v6_sub', JSON.stringify(submissions));
+            localStorage.setItem('v6_count', document.getElementById('studentCount').value);
             renderTable();
         }
 
@@ -155,22 +149,21 @@
 
             header.innerHTML = '<th class="p-3 border-b border-amber-100 bg-amber-50 sticky-idx text-amber-900">座號</th>';
             tasks.forEach((t, i) => {
-                header.innerHTML += `<th class="p-3 border-b border-amber-100 bg-amber-50 text-amber-900 min-w-[120px] text-sm font-bold">
-                    ${t} <button onclick="deleteTask(${i})" class="text-amber-300 hover:text-red-500 ml-1">✕</button>
+                header.innerHTML += `<th class="p-3 border-b border-amber-100 bg-amber-50 text-amber-900 min-w-[110px] sm:min-w-[140px] font-black text-sm sm:text-base">
+                    ${t} <button onclick="deleteTask(${i})" class="text-amber-300 ml-1">×</button>
                 </th>`;
             });
 
             body.innerHTML = '';
             for (let i = 1; i <= count; i++) {
-                let row = `<tr class="hover:bg-amber-50/30 transition-colors">
-                    <td class="p-2 border-b border-amber-50 text-center font-black sticky-idx text-amber-800/60">${i}</td>`;
+                let row = `<tr><td class="p-2 border-b border-amber-50 text-center font-black sticky-idx text-amber-800 bg-amber-50/30">${i}</td>`;
                 tasks.forEach(t => {
                     const s = (submissions[i] && submissions[i][t]) || 0;
-                    const labels = ["未交", "待訂正", "已完成"];
-                    row += `<td class="p-2 border-b border-amber-50">
+                    const labels = ["未交", "待訂正", "完成"];
+                    row += `<td class="p-1.5 border-b border-amber-50">
                                 <button onclick="cycleStatus(${i},'${t}')" class="status-btn status-${s}">
-                                    <span class="text-[10px] mb-1 font-bold opacity-80">${i} 號</span>
-                                    <span class="font-black tracking-widest">${labels[s]}</span>
+                                    <span class="btn-label-idx">${i}</span>
+                                    <span class="btn-label-status">${labels[s]}</span>
                                 </button>
                             </td>`;
                 });
@@ -190,13 +183,13 @@
                     const s = (submissions[i] && submissions[i][t]) || 0;
                     if (s === 0) m.push(i); if (s === 1) c.push(i);
                 }
-                if (m.length) mDiv.innerHTML += `<div class="report-card text-xs border-slate-300"><strong>${t}：</strong>${m.join(', ')} 號</div>`;
-                if (c.length) cDiv.innerHTML += `<div class="report-card text-xs"><strong>${t}：</strong>${c.join(', ')} 號</div>`;
+                if (m.length) mDiv.innerHTML += `<div class="mb-1">${t}: ${m.join(', ')}</div>`;
+                if (c.length) cDiv.innerHTML += `<div class="mb-1">${t}: ${c.join(', ')}</div>`;
             });
         }
 
-        function deleteTask(i) { if(confirm('確定要移除這項作業紀錄嗎？')) { tasks.splice(i, 1); saveAndRender(); } }
-        function clearAllData() { if(confirm('警告：這將清除所有數據，確定嗎？')) { localStorage.clear(); location.reload(); } }
+        function deleteTask(i) { if(confirm('刪除作業？')) { tasks.splice(i, 1); saveAndRender(); } }
+        function clearAllData() { if(confirm('重設？')) { localStorage.clear(); location.reload(); } }
 
         function exportExcel() {
             const count = parseInt(document.getElementById('studentCount').value);
@@ -211,8 +204,8 @@
             }
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "作業紀錄");
-            XLSX.writeFile(wb, `班級紀錄_${new Date().toLocaleDateString()}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "作業");
+            XLSX.writeFile(wb, `作業紀錄_${new Date().toLocaleDateString()}.xlsx`);
         }
         init();
     </script>
