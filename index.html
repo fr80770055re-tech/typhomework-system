@@ -3,93 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生作業繳交系統 (具記憶功能)</title>
+    <title>學生作業繳交與訂正系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        .checked-cell { background-color: #d1fae5; border-color: #10b981 !important; }
-        .touch-area { min-height: 60px; cursor: pointer; transition: all 0.1s; }
-        .touch-area:active { transform: scale(0.95); background-color: #f1f5f9; }
+        /* 16:9 比例與寬度優化 */
+        .container-16-9 {
+            width: 95vw;
+            max-width: 1600px;
+            margin: 0 auto;
+            aspect-ratio: 16 / 9;
+        }
+        /* 狀態顏色定義 */
+        .status-btn {
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70px;
+        }
+        .status-unsubmitted { background-color: #f3f4f6; color: #9ca3af; border: 2px dashed #d1d5db; } /* 未交 */
+        .status-submitted { background-color: #d1fae5; color: #065f46; border: 2px solid #10b981; }   /* 已交未訂正 */
+        .status-corrected { background-color: #dbeafe; color: #1e40af; border: 2px solid #3b82f6; }   /* 已訂正 */
+        
+        .sticky-col { position: sticky; left: 0; background: white; z-index: 5; }
         th { position: sticky; top: 0; background: #f3f4f6; z-index: 10; }
     </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-200 p-4">
 
-    <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <div class="p-6 bg-slate-800 text-white flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold">🏫 教學助手：作業管理</h1>
-                <p class="text-xs text-slate-400 mt-1">數據已自動儲存於本瀏覽器</p>
+    <div class="container-16-9 bg-white shadow-2xl rounded-2xl flex flex-col overflow-hidden">
+        
+        <div class="p-6 bg-slate-800 text-white flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold">📋 學生作業紀錄系統</h1>
+                <span class="bg-yellow-500 text-slate-900 px-2 py-1 rounded text-xs font-bold">寬螢幕 16:9 版</span>
             </div>
-            <button onclick="exportExcel()" class="bg-emerald-500 hover:bg-emerald-600 px-6 py-2 rounded-lg font-bold shadow-md transition">
-                📥 匯出 Excel
-            </button>
+            <div class="flex gap-3">
+                <button onclick="exportExcel()" class="bg-emerald-500 hover:bg-emerald-600 px-5 py-2 rounded-lg font-bold transition">📊 匯出 Excel</button>
+                <button onclick="clearAllData()" class="bg-red-500 hover:bg-red-600 px-5 py-2 rounded-lg font-bold transition text-sm">重設系統</button>
+            </div>
         </div>
 
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="space-y-2">
-                    <label class="font-semibold text-gray-700">學生人數（座號上限）</label>
-                    <input type="number" id="studentCount" value="5" class="w-full border-2 border-gray-200 p-3 rounded-xl focus:border-blue-500 outline-none transition" onchange="saveAndRender()">
+        <div class="flex-1 overflow-auto p-6 flex flex-col gap-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex flex-col gap-2">
+                    <label class="font-bold text-slate-600">1. 設定學生總人數</label>
+                    <input type="number" id="studentCount" value="5" class="p-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none" onchange="saveAndRender()">
                 </div>
-                <div class="space-y-2">
-                    <label class="font-semibold text-gray-700">新增作業名稱</label>
+                <div class="flex flex-col gap-2">
+                    <label class="font-bold text-slate-600">2. 新增作業名稱</label>
                     <div class="flex gap-2">
-                        <input type="text" id="taskName" placeholder="輸入作業名，如：數作 P.10" class="flex-1 border-2 border-gray-200 p-3 rounded-xl focus:border-purple-500 outline-none">
-                        <button onclick="addTask()" class="bg-purple-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-purple-700">新增</button>
+                        <input type="text" id="taskName" placeholder="例如：數習 L1" class="flex-1 p-3 border-2 rounded-lg focus:ring-2 focus:ring-purple-400 outline-none">
+                        <button onclick="addTask()" class="bg-purple-600 text-white px-6 rounded-lg font-bold">新增</button>
                     </div>
                 </div>
             </div>
 
-            <div class="overflow-x-auto border-2 border-gray-100 rounded-xl shadow-inner bg-gray-50" style="max-height: 500px;">
-                <table class="w-full text-center border-collapse">
+            <div class="border rounded-xl overflow-hidden bg-white shadow-sm">
+                <table class="w-full text-sm">
                     <thead>
                         <tr id="tableHeader">
-                            <th class="p-4 border-b-2 border-gray-200 w-24">座號</th>
+                            <th class="p-4 border-b w-24">座號</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
 
-            <div class="mt-10 bg-red-50 p-6 rounded-2xl border-2 border-red-100">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-2xl">📢</span>
-                    <h2 class="text-xl font-black text-red-700">未繳交名單彙整</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-red-50 p-6 rounded-xl border border-red-100">
+                    <h3 class="text-lg font-bold text-red-700 mb-4">📢 尚未繳交名單</h3>
+                    <div id="missingReport" class="flex flex-col gap-2"></div>
                 </div>
-                <div id="missingReport" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
-            
-            <div class="mt-8 text-right">
-                <button onclick="clearAllData()" class="text-sm text-gray-400 hover:text-red-500 underline">清除所有數據並重新開始</button>
+                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                    <h3 class="text-lg font-bold text-blue-700 mb-4">✍️ 尚未訂正名單</h3>
+                    <div id="correctionReport" class="flex flex-col gap-2"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let tasks = [];
-        let submissions = {}; // {座號: {作業名: true}}
+        let submissions = {}; // {座號: {作業名: 0=未交, 1=已交未訂, 2=已訂正}}
 
-        // --- 核心功能：讀取與儲存 ---
-        
-        // 初始化：從 localStorage 載入數據
         function init() {
-            const savedTasks = localStorage.getItem('teacher_tasks');
-            const savedSubmissions = localStorage.getItem('teacher_submissions');
-            const savedCount = localStorage.getItem('teacher_studentCount');
+            const savedTasks = localStorage.getItem('v2_tasks');
+            const savedSub = localStorage.getItem('v2_submissions');
+            const savedCount = localStorage.getItem('v2_count');
 
             if (savedTasks) tasks = JSON.parse(savedTasks);
-            if (savedSubmissions) submissions = JSON.parse(savedSubmissions);
+            if (savedSub) submissions = JSON.parse(savedSub);
             if (savedCount) document.getElementById('studentCount').value = savedCount;
 
             renderTable();
         }
 
-        // 儲存數據
         function saveData() {
-            localStorage.setItem('teacher_tasks', JSON.stringify(tasks));
-            localStorage.setItem('teacher_submissions', JSON.stringify(submissions));
-            localStorage.setItem('teacher_studentCount', document.getElementById('studentCount').value);
+            localStorage.setItem('v2_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v2_submissions', JSON.stringify(submissions));
+            localStorage.setItem('v2_count', document.getElementById('studentCount').value);
         }
 
         function saveAndRender() {
@@ -97,21 +113,20 @@
             renderTable();
         }
 
-        // --- 介面操作 ---
-
         function addTask() {
             const input = document.getElementById('taskName');
             const val = input.value.trim();
-            if (!val) return;
-            if (tasks.includes(val)) { alert('作業名稱重複囉！'); return; }
+            if (!val || tasks.includes(val)) return;
             tasks.push(val);
             input.value = '';
             saveAndRender();
         }
 
-        function toggle(studentId, taskName) {
+        // 切換狀態：未交 -> 已交 -> 已訂正 -> 未交
+        function cycleStatus(studentId, taskName) {
             if (!submissions[studentId]) submissions[studentId] = {};
-            submissions[studentId][taskName] = !submissions[studentId][taskName];
+            let current = submissions[studentId][taskName] || 0;
+            submissions[studentId][taskName] = (current + 1) % 3;
             saveAndRender();
         }
 
@@ -119,68 +134,72 @@
             const count = parseInt(document.getElementById('studentCount').value) || 0;
             const header = document.getElementById('tableHeader');
             const body = document.getElementById('tableBody');
-            const report = document.getElementById('missingReport');
 
-            // 1. 渲染表頭
-            header.innerHTML = '<th class="p-4 border-b-2 border-gray-200 bg-gray-100">座號</th>';
-            tasks.forEach((t, index) => {
+            // 渲染表頭
+            header.innerHTML = '<th class="p-4 border-b bg-gray-50 text-slate-500">座號</th>';
+            tasks.forEach((t, i) => {
                 header.innerHTML += `
-                    <th class="p-4 border-b-2 border-gray-200 bg-gray-100 group">
-                        <div class="flex items-center justify-center gap-2">
-                            ${t}
-                            <button onclick="deleteTask(${index})" class="text-gray-400 hover:text-red-500 text-xs">✕</button>
-                        </div>
+                    <th class="p-4 border-b bg-gray-50 text-slate-700">
+                        ${t} <button onclick="deleteTask(${i})" class="text-red-300 hover:text-red-500 ml-1">✕</button>
                     </th>`;
             });
 
-            // 2. 渲染表身
+            // 渲染表身
             body.innerHTML = '';
             for (let i = 1; i <= count; i++) {
-                let row = `<tr class="bg-white border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                            <td class="p-4 font-bold text-gray-500 border-r border-gray-100">${i}</td>`;
+                let row = `<tr><td class="p-4 border-b text-center font-bold bg-gray-50">${i}</td>`;
                 tasks.forEach(t => {
-                    const isChecked = submissions[i] && submissions[i][t];
+                    const status = (submissions[i] && submissions[i][t]) || 0;
+                    let btnClass = "status-unsubmitted";
+                    let label = "未交";
+                    if (status === 1) { btnClass = "status-submitted"; label = "已交"; }
+                    if (status === 2) { btnClass = "status-corrected"; label = "完成"; }
+
                     row += `
-                        <td class="p-0 border-r border-gray-100 touch-area ${isChecked ? 'checked-cell' : ''}" 
-                            onclick="toggle(${i}, '${t}')">
-                            <div class="flex items-center justify-center h-full w-full text-2xl">
-                                ${isChecked ? '✅' : '<span class="text-gray-200 opacity-50">○</span>'}
-                            </div>
+                        <td class="p-2 border-b">
+                            <button onclick="cycleStatus(${i}, '${t}')" class="w-full rounded-lg status-btn ${btnClass} shadow-sm">
+                                <span class="text-xs opacity-60">${i} 號</span>
+                                <span class="font-bold">${label}</span>
+                            </button>
                         </td>`;
                 });
                 row += `</tr>`;
                 body.innerHTML += row;
             }
 
-            // 3. 渲染未繳名單
-            report.innerHTML = '';
+            updateReports(count);
+        }
+
+        function updateReports(count) {
+            const missingDiv = document.getElementById('missingReport');
+            const correctionDiv = document.getElementById('correctionReport');
+            missingDiv.innerHTML = '';
+            correctionDiv.innerHTML = '';
+
             tasks.forEach(t => {
                 let missing = [];
+                let needCorrection = [];
                 for (let i = 1; i <= count; i++) {
-                    if (!submissions[i] || !submissions[i][t]) missing.push(i);
+                    const status = (submissions[i] && submissions[i][t]) || 0;
+                    if (status === 0) missing.push(i);
+                    if (status === 1) needCorrection.push(i);
                 }
-                report.innerHTML += `
-                    <div class="p-4 bg-white rounded-xl shadow-sm border border-red-100">
-                        <div class="text-sm font-bold text-gray-400 mb-1 uppercase tracking-wider">${t}</div>
-                        <div class="text-lg font-bold ${missing.length > 0 ? 'text-red-500' : 'text-emerald-500'}">
-                            ${missing.length > 0 ? '未交：' + missing.join(', ') : '✨ 全部繳齊'}
-                        </div>
-                    </div>`;
+                
+                if (missing.length > 0) {
+                    missingDiv.innerHTML += `<div class="bg-white p-2 rounded shadow-sm text-sm border-l-4 border-red-500"><strong>${t}:</strong> ${missing.join(', ')} 號</div>`;
+                }
+                if (needCorrection.length > 0) {
+                    correctionDiv.innerHTML += `<div class="bg-white p-2 rounded shadow-sm text-sm border-l-4 border-blue-500"><strong>${t}:</strong> ${needCorrection.join(', ')} 號</div>`;
+                }
             });
         }
 
-        function deleteTask(index) {
-            if(confirm(`確定要刪除「${tasks[index]}」這項作業嗎？資料將無法找回。`)) {
-                tasks.splice(index, 1);
-                saveAndRender();
-            }
+        function deleteTask(idx) {
+            if(confirm('確定刪除作業？')) { tasks.splice(idx, 1); saveAndRender(); }
         }
 
         function clearAllData() {
-            if(confirm('警告：這將會清除所有學生人數、作業名單與勾選紀錄！')) {
-                localStorage.clear();
-                location.reload();
-            }
+            if(confirm('確定重設？所有紀錄會消失！')) { localStorage.clear(); location.reload(); }
         }
 
         function exportExcel() {
@@ -189,17 +208,17 @@
             for (let i = 1; i <= count; i++) {
                 let obj = { '座號': i };
                 tasks.forEach(t => {
-                    obj[t] = (submissions[i] && submissions[i][t]) ? 'V' : '';
+                    const s = (submissions[i] && submissions[i][t]) || 0;
+                    obj[t] = s === 0 ? '未交' : (s === 1 ? '已交未訂正' : '已訂正');
                 });
                 data.push(obj);
             }
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "作業進度表");
-            XLSX.writeFile(wb, `學生作業統計_${new Date().toLocaleDateString()}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "統計");
+            XLSX.writeFile(wb, `班級作業_${new Date().toLocaleDateString()}.xlsx`);
         }
 
-        // 啟動系統
         init();
     </script>
 </body>
