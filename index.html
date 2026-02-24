@@ -3,59 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>作業管理系統 - 電腦/手機雙優化版</title>
+    <title>班級綜合管理系統 - 歷史紀錄版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            background-color: #fdf6e3; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
-        }
+        body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; background-color: #fdf6e3; font-family: "Microsoft JhengHei", sans-serif; }
         .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; max-width: 1800px; margin: 0 auto; width: 100%; }
+        .scroll-section { flex: 1; overflow: auto; background: #fffdf9; border-top: 2px solid #e2d7bf; }
         
-        /* 表格滾動區域 */
-        .table-wrapper { flex: 1; overflow: auto; background: #fffdf9; border-top: 1px solid #e2d7bf; }
-        
-        /* 按鈕設計：電腦/手機兼容 */
-        .status-btn {
-            transition: all 0.1s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 65px;
-            width: 100%;
-            border-radius: 8px;
-            position: relative;
-        }
-        
-        /* 狀態文字大小 */
-        .btn-label-idx { position: absolute; top: 4px; left: 6px; font-size: 0.75rem; font-weight: 700; opacity: 0.6; }
-        .btn-label-status { font-size: 1.15rem; font-weight: 900; }
+        /* 按鈕基礎樣式 */
+        .btn-base { transition: all 0.1s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; position: relative; width: 100%; height: 50px; }
+        .btn-idx { position: absolute; top: 2px; left: 5px; font-size: 0.7rem; font-weight: 700; opacity: 0.6; }
+        .btn-text { font-size: 1.1rem; font-weight: 900; }
 
-        /* 顏色深色化 (暖色系) */
-        .status-0 { background-color: #e2e8f0; color: #475569; border: 1px solid #94a3b8; }
-        .status-1 { background-color: #f97316; color: #ffffff; border: 2px solid #ea580c; box-shadow: 0 2px 0 #9a3412; } /* 待訂正 */
-        .status-2 { background-color: #2563eb; color: #ffffff; border: 2px solid #1d4ed8; box-shadow: 0 2px 0 #1e3a8a; } /* 已完成 */
-        
-        /* 電腦端懸停 */
-        @media (hover: hover) {
-            .status-btn:hover { filter: brightness(0.9); cursor: pointer; }
-        }
+        /* 作業與出勤顏色定義 (延續暖色調) */
+        .task-0 { background-color: #e2e8f0; color: #475569; border: 1px solid #94a3b8; }
+        .task-1 { background-color: #f97316; color: #fff; border: 2px solid #ea580c; }
+        .task-2 { background-color: #2563eb; color: #fff; border: 2px solid #1d4ed8; }
 
-        /* 響應式調整 */
-        @media (max-width: 640px) {
-            .btn-label-status { font-size: 1rem; }
-            .status-btn { height: 55px; }
-            th, td { padding: 0.25rem !important; }
-        }
+        .att-0 { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; } /* 出席 */
+        .att-1 { background-color: #fef3c7; color: #92400e; border: 2px solid #fbbf24; } /* 事假 */
+        .att-2 { background-color: #fee2e2; color: #991b1b; border: 2px solid #ef4444; } /* 病假 */
+        .att-3 { background-color: #dcfce7; color: #166534; border: 2px solid #22c55e; } /* 公假 */
+        .att-4 { background-color: #f3f4f6; color: #1f2937; border: 2px solid #4b5563; } /* 喪假 */
+        .att-5 { background-color: #f3e8ff; color: #6b21a8; border: 2px solid #a855f7; } /* 遲到 */
 
-        th { position: sticky; top: 0; background: #f5ede0; z-index: 20; border-bottom: 2px solid #e2d7bf; font-weight: 900; }
+        th { position: sticky; top: 0; background: #f5ede0; z-index: 20; border-bottom: 2px solid #e2d7bf; font-weight: 900; font-size: 0.9rem; }
         .sticky-idx { position: sticky; left: 0; background: #f5ede0; z-index: 10; border-right: 2px solid #e2d7bf; font-weight: 900; }
+        .section-title { background: #78350f; color: #fef3c7; padding: 8px 15px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+        .date-picker { background: #fef3c7; color: #78350f; border: none; border-radius: 4px; padding: 2px 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body class="p-0 sm:p-2">
@@ -63,149 +39,200 @@
     <div class="main-container bg-white shadow-lg sm:rounded-2xl overflow-hidden">
         
         <div class="px-4 py-3 bg-amber-950 text-white flex justify-between items-center shrink-0">
-            <h1 class="font-black text-lg">作業紀錄</h1>
+            <h1 class="font-black text-lg">班級大數據管理</h1>
             <div class="flex gap-2">
-                <button onclick="exportExcel()" class="bg-emerald-600 px-3 py-1.5 rounded-lg text-sm font-bold">Excel</button>
-                <button onclick="clearAllData()" class="text-amber-400 text-xs underline">重設</button>
+                <button onclick="exportExcel()" class="bg-emerald-600 px-3 py-1 rounded-lg text-sm font-bold shadow-md">導出 Excel</button>
+                <button onclick="clearAllData()" class="text-amber-400 text-xs underline">數據重設</button>
             </div>
         </div>
 
-        <div class="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 border-b bg-orange-50/50 shrink-0">
-            <div class="flex items-center justify-between sm:justify-start gap-3">
-                <label class="text-sm font-bold">人數:</label>
-                <input type="number" id="studentCount" value="5" class="w-20 p-2 border rounded-lg font-bold text-center" onchange="saveAndRender()">
-                <div class="text-xs text-gray-400 hidden sm:block">數據自動儲存</div>
+        <div class="p-3 flex flex-wrap items-center justify-between gap-4 border-b bg-orange-50/50 shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-black text-amber-900">📅 紀錄日期:</span>
+                <input type="date" id="currentDate" class="date-picker shadow-inner" onchange="renderAll()">
             </div>
-            <div class="flex gap-2">
-                <input type="text" id="taskName" placeholder="作業名稱" class="flex-1 p-2 border rounded-lg text-sm font-bold">
-                <button onclick="addTask()" class="bg-amber-800 text-white px-4 rounded-lg font-bold text-sm">新增</button>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-gray-500">學生人數:</label>
+                    <input type="number" id="studentCount" value="5" class="w-14 p-1 border rounded font-bold text-center" onchange="saveAndRender()">
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="taskName" placeholder="作業名稱" class="w-32 p-1 border rounded text-sm font-bold shadow-sm">
+                    <button onclick="addTask()" class="bg-amber-800 text-white px-3 py-1 rounded font-bold text-xs">新增作業</button>
+                </div>
             </div>
         </div>
 
-        <div class="table-wrapper">
+        <div class="section-title text-sm">
+            <span>📚 作業紀錄 <span id="titleTaskDate" class="text-xs opacity-80"></span></span>
+        </div>
+        <div class="scroll-section" style="flex: 1.2;">
             <table class="w-full border-collapse">
-                <thead>
-                    <tr id="tableHeader">
-                        <th class="p-3 w-14 sticky-idx">#</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
+                <thead><tr id="taskHeader"><th class="p-3 w-14 sticky-idx">座號</th></tr></thead>
+                <tbody id="taskBody"></tbody>
+            </table>
+        </div>
+
+        <div class="section-title text-sm border-t-2 border-amber-900">
+            <span>📅 出缺勤紀錄 <span id="titleAttDate" class="text-xs opacity-80"></span></span>
+        </div>
+        <div class="scroll-section">
+            <table class="w-full border-collapse">
+                <thead><tr><th class="p-3 w-14 sticky-idx">座號</th><th class="p-3 text-left">點擊切換狀態</th></tr></thead>
+                <tbody id="attendanceBody"></tbody>
             </table>
         </div>
 
         <div class="p-4 bg-amber-50 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0 overflow-y-auto max-h-40">
-            <div class="bg-white/50 p-3 rounded-lg border border-amber-100">
-                <h3 class="text-xs font-black text-gray-500 mb-1">● 尚未繳交</h3>
-                <div id="missingReport" class="text-sm font-bold text-gray-700 leading-relaxed"></div>
+            <div class="bg-white/70 p-2 rounded-lg border border-amber-100">
+                <h3 class="text-xs font-black text-gray-400 mb-1">未完成作業</h3>
+                <div id="taskReport" class="text-xs font-bold text-gray-600"></div>
             </div>
-            <div class="bg-white p-3 rounded-lg border border-orange-200 shadow-sm">
-                <h3 class="text-xs font-black text-orange-600 mb-1">● 待訂正</h3>
-                <div id="correctionReport" class="text-sm font-bold text-orange-800 leading-relaxed"></div>
+            <div class="bg-white p-2 rounded-lg border border-orange-200 shadow-sm">
+                <h3 class="text-xs font-black text-orange-600 mb-1">今日假別名單</h3>
+                <div id="attendanceReport" class="text-xs font-bold text-orange-800"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // 資料結構：{ "2023-10-27": { taskData: {}, attData: {} } }
+        let history = {};
         let tasks = [];
-        let submissions = {}; 
+        const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
         function init() {
-            const t = localStorage.getItem('v6_tasks');
-            const s = localStorage.getItem('v6_sub');
-            const c = localStorage.getItem('v6_count');
+            // 初始化日期為今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('currentDate').value = today;
+
+            const h = localStorage.getItem('v8_history');
+            const t = localStorage.getItem('v8_tasks');
+            const c = localStorage.getItem('v8_count');
+            
+            if (h) history = JSON.parse(h);
             if (t) tasks = JSON.parse(t);
-            if (s) submissions = JSON.parse(s);
             if (c) document.getElementById('studentCount').value = c;
-            renderTable();
+            
+            renderAll();
+        }
+
+        function getCurrentDate() { return document.getElementById('currentDate').value; }
+
+        function ensureDateEntry(date) {
+            if (!history[date]) {
+                history[date] = { taskData: {}, attData: {} };
+            }
         }
 
         function saveAndRender() {
-            localStorage.setItem('v6_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v6_sub', JSON.stringify(submissions));
-            localStorage.setItem('v6_count', document.getElementById('studentCount').value);
-            renderTable();
+            localStorage.setItem('v8_history', JSON.stringify(history));
+            localStorage.setItem('v8_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v8_count', document.getElementById('studentCount').value);
+            renderAll();
         }
 
         function addTask() {
-            const input = document.getElementById('taskName');
-            const val = input.value.trim();
+            const val = document.getElementById('taskName').value.trim();
             if (!val || tasks.includes(val)) return;
             tasks.push(val);
-            input.value = '';
+            document.getElementById('taskName').value = '';
             saveAndRender();
         }
 
-        function cycleStatus(id, task) {
-            if (!submissions[id]) submissions[id] = {};
-            let curr = submissions[id][task] || 0;
-            submissions[id][task] = (curr + 1) % 3;
+        function cycleTask(id, task) {
+            const date = getCurrentDate();
+            ensureDateEntry(date);
+            if (!history[date].taskData[id]) history[date].taskData[id] = {};
+            history[date].taskData[id][task] = ((history[date].taskData[id][task] || 0) + 1) % 3;
             saveAndRender();
         }
 
-        function renderTable() {
+        function cycleAttendance(id) {
+            const date = getCurrentDate();
+            ensureDateEntry(date);
+            history[date].attData[id] = ((history[date].attData[id] || 0) + 1) % 6;
+            saveAndRender();
+        }
+
+        function renderAll() {
+            const date = getCurrentDate();
             const count = parseInt(document.getElementById('studentCount').value) || 0;
-            const header = document.getElementById('tableHeader');
-            const body = document.getElementById('tableBody');
+            document.getElementById('titleTaskDate').innerText = `(${date})`;
+            document.getElementById('titleAttDate').innerText = `(${date})`;
+            
+            const dateInfo = history[date] || { taskData: {}, attData: {} };
 
-            header.innerHTML = '<th class="p-3 border-b border-amber-100 bg-amber-50 sticky-idx text-amber-900">座號</th>';
+            // 渲染作業
+            const tHeader = document.getElementById('taskHeader');
+            const tBody = document.getElementById('taskBody');
+            tHeader.innerHTML = '<th class="p-3 sticky-idx">座號</th>';
             tasks.forEach((t, i) => {
-                header.innerHTML += `<th class="p-3 border-b border-amber-100 bg-amber-50 text-amber-900 min-w-[110px] sm:min-w-[140px] font-black text-sm sm:text-base">
-                    ${t} <button onclick="deleteTask(${i})" class="text-amber-300 ml-1">×</button>
-                </th>`;
+                tHeader.innerHTML += `<th class="p-3 min-w-[120px]">${t} <button onclick="deleteTask(${i})" class="text-amber-300">×</button></th>`;
             });
-
-            body.innerHTML = '';
+            
+            tBody.innerHTML = '';
             for (let i = 1; i <= count; i++) {
-                let row = `<tr><td class="p-2 border-b border-amber-50 text-center font-black sticky-idx text-amber-800 bg-amber-50/30">${i}</td>`;
+                let row = `<tr><td class="p-2 border-b text-center font-black sticky-idx bg-amber-50/30">${i}</td>`;
                 tasks.forEach(t => {
-                    const s = (submissions[i] && submissions[i][t]) || 0;
-                    const labels = ["未交", "待訂正", "完成"];
-                    row += `<td class="p-1.5 border-b border-amber-50">
-                                <button onclick="cycleStatus(${i},'${t}')" class="status-btn status-${s}">
-                                    <span class="btn-label-idx">${i}</span>
-                                    <span class="btn-label-status">${labels[s]}</span>
-                                </button>
-                            </td>`;
+                    const s = (dateInfo.taskData[i] && dateInfo.taskData[i][t]) || 0;
+                    row += `<td class="p-1 border-b"><button onclick="cycleTask(${i},'${t}')" class="btn-base task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${["未交", "待訂正", "完成"][s]}</span></button></td>`;
                 });
-                row += `</tr>`;
-                body.innerHTML += row;
+                tBody.innerHTML += row + `</tr>`;
             }
-            updateReports(count);
+
+            // 渲染出勤
+            const aBody = document.getElementById('attendanceBody');
+            aBody.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                const s = dateInfo.attData[i] || 0;
+                aBody.innerHTML += `<tr><td class="p-2 border-b text-center font-black sticky-idx bg-amber-50/30">${i}</td><td class="p-1 border-b"><button onclick="cycleAttendance(${i})" class="btn-base h-[40px] att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td></tr>`;
+            }
+            updateReports(count, dateInfo);
         }
 
-        function updateReports(count) {
-            const mDiv = document.getElementById('missingReport');
-            const cDiv = document.getElementById('correctionReport');
-            mDiv.innerHTML = ''; cDiv.innerHTML = '';
+        function updateReports(count, dateInfo) {
+            const tDiv = document.getElementById('taskReport');
+            const aDiv = document.getElementById('attendanceReport');
+            tDiv.innerHTML = ''; aDiv.innerHTML = '';
+
             tasks.forEach(t => {
                 let m = [], c = [];
                 for (let i = 1; i <= count; i++) {
-                    const s = (submissions[i] && submissions[i][t]) || 0;
+                    const s = (dateInfo.taskData[i] && dateInfo.taskData[i][t]) || 0;
                     if (s === 0) m.push(i); if (s === 1) c.push(i);
                 }
-                if (m.length) mDiv.innerHTML += `<div class="mb-1">${t}: ${m.join(', ')}</div>`;
-                if (c.length) cDiv.innerHTML += `<div class="mb-1">${t}: ${c.join(', ')}</div>`;
+                if (m.length || c.length) tDiv.innerHTML += `<div>${t}: 未交(${m.join(',')}) 待訂(${c.join(',')})</div>`;
             });
+
+            let stats = { 1:[], 2:[], 3:[], 4:[], 5:[] };
+            for (let i = 1; i <= count; i++) {
+                const s = dateInfo.attData[i] || 0;
+                if (s > 0) stats[s].push(i);
+            }
+            aDiv.innerHTML = Object.keys(stats).map(k => stats[k].length ? `<div>${attLabels[k]}: ${stats[k].join(',')}號 (${stats[k].length}人)</div>` : '').join('');
         }
 
         function deleteTask(i) { if(confirm('刪除作業？')) { tasks.splice(i, 1); saveAndRender(); } }
-        function clearAllData() { if(confirm('重設？')) { localStorage.clear(); location.reload(); } }
+        function clearAllData() { if(confirm('這將清除所有歷史紀錄！確定嗎？')) { localStorage.clear(); location.reload(); } }
 
         function exportExcel() {
+            const date = getCurrentDate();
+            const dateInfo = history[date] || { taskData: {}, attData: {} };
             const count = parseInt(document.getElementById('studentCount').value);
             let data = [];
             for (let i = 1; i <= count; i++) {
-                let obj = { '座號': i };
+                let obj = { '日期': date, '座號': i, '出勤狀態': attLabels[dateInfo.attData[i] || 0] };
                 tasks.forEach(t => {
-                    const s = (submissions[i] && submissions[i][t]) || 0;
+                    const s = (dateInfo.taskData[i] && dateInfo.taskData[i][t]) || 0;
                     obj[t] = ["未交", "待訂正", "已完成"][s];
                 });
                 data.push(obj);
             }
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "作業");
-            XLSX.writeFile(wb, `作業紀錄_${new Date().toLocaleDateString()}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "今日紀錄");
+            XLSX.writeFile(wb, `班級報表_${date}.xlsx`);
         }
         init();
     </script>
