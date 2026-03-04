@@ -3,116 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 - Windows 優化版</title>
+    <title>班級管理系統 v13 - 狀態清晰版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style id="dynamicStyles">
         :root { --base-font-size: 16px; }
-        
-        /* Windows 全局字體優化 */
         body { 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
             background-color: #fdf6e3; font-size: var(--base-font-size);
-            font-family: "Segoe UI", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Windows 專屬美化滾動條 */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f5ede0; }
         ::-webkit-scrollbar-thumb { background: #d2c5ae; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #78350f; }
 
-        .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; max-width: 100%; width: 100%; }
-        
-        /* 滾動區域 */
+        .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; width: 100%; }
         .scroll-section { flex: 1; overflow: auto; background: #fffdf9; border-top: 3px solid #78350f; }
         
-        /* 正方形按鈕 - 強化 Windows 下的立體感 */
         .square-btn {
             transition: all 0.1s ease; display: flex; flex-direction: column; align-items: center; 
             justify-content: center; border-radius: 10px; position: relative;
             aspect-ratio: 1 / 1; width: 100%; min-width: 65px; max-width: 110px; margin: 0 auto;
-            border: 2px solid transparent; cursor: pointer;
+            cursor: pointer;
         }
-        
-        /* 防止座號數字穿模：使用半透明背板 */
         .btn-idx { 
-            position: absolute; top: 0; left: 0; 
-            font-size: 0.6em; font-weight: 800; 
-            background: rgba(0,0,0,0.1); color: inherit;
-            padding: 1px 5px; border-radius: 8px 0 8px 0;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; font-size: 0.65em; font-weight: 800; 
+            background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 8px 0 8px 0; z-index: 10;
         }
-        
-        .btn-text { font-size: 1.1em; font-weight: 900; text-align: center; line-height: 1.2; z-index: 5; margin-top: 5px; }
+        .btn-text { font-size: 1.15em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 8px; }
 
-        /* 狀態顏色強化 */
-        .task-0 { background-color: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
-        .task-1 { background-color: #ea580c; color: #fff; border-color: #9a3412; box-shadow: 0 4px 0 #9a3412; }
-        .task-2 { background-color: #1d4ed8; color: #fff; border-color: #1e3a8a; box-shadow: 0 4px 0 #1e3a8a; }
+        .task-0 { background-color: #f1f5f9; color: #64748b; border: 2px solid #cbd5e1; }
+        .task-1 { background-color: #ea580c; color: #fff; border: 2px solid #9a3412; box-shadow: 0 4px 0 #9a3412; }
+        .task-2 { background-color: #1d4ed8; color: #fff; border: 2px solid #1e3a8a; box-shadow: 0 4px 0 #1e3a8a; }
 
-        .att-0 { background-color: #10b981; color: #fff; border-color: #065f46; box-shadow: 0 4px 0 #064e3b; }
-        .att-1 { background-color: #fbbf24; color: #92400e; border-color: #d97706; }
-        .att-2 { background-color: #ef4444; color: #fff; border-color: #991b1b; }
-        .att-3 { background-color: #3b82f6; color: #fff; border-color: #1e3a8a; }
-        .att-4 { background-color: #4b5563; color: #fff; border-color: #1f2937; }
-        .att-5 { background-color: #a855f7; color: #fff; border-color: #6b21a8; }
+        .att-0 { background-color: #10b981; color: #fff; border: 2px solid #065f46; box-shadow: 0 4px 0 #064e3b; }
+        .att-1 { background-color: #fbbf24; color: #92400e; border: 2px solid #d97706; }
+        .att-2 { background-color: #ef4444; color: #fff; border: 2px solid #991b1b; }
+        .att-3 { background-color: #3b82f6; color: #fff; border: 2px solid #1e3a8a; }
+        .att-4 { background-color: #4b5563; color: #fff; border: 2px solid #1f2937; }
+        .att-5 { background-color: #a855f7; color: #fff; border: 2px solid #6b21a8; }
 
         .square-btn:active { transform: translateY(3px); box-shadow: none; }
 
-        /* 表格固定效果優化 */
         th { position: sticky; top: 0; background: #f5ede0; z-index: 30; border-bottom: 3px solid #e2d7bf; padding: 12px; }
         .sticky-idx { position: sticky; left: 0; background: #f5ede0; z-index: 40; border-right: 3px solid #e2d7bf; font-weight: 900; }
         
-        /* 頁籤美化 */
-        .tab-btn { flex: 1; py-4; font-weight: 900; font-size: 1.2em; transition: 0.2s; border-bottom: 4px solid transparent; }
+        .tab-btn { flex: 1; padding: 15px 0; font-weight: 900; font-size: 1.2em; transition: 0.2s; border-bottom: 4px solid transparent; }
         .tab-active { background-color: #fffdf9; color: #78350f; border-bottom: 4px solid #78350f; }
         .tab-inactive { background-color: #e2d7bf; color: #78350f; opacity: 0.7; }
 
-        /* 加大總覽區 (針對 Windows 寬螢幕) */
-        .report-section {
-            background-color: #fff; border-top: 5px solid #78350f;
-            padding: 20px; flex-shrink: 0; height: 30%; overflow-y: auto;
-        }
-        .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .report-card { background: #fdf6e3; padding: 15px; border-radius: 12px; border: 1px solid #e2d7bf; }
-        .report-title { font-size: 1.3em; font-weight: 900; color: #78350f; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .report-section { background-color: #fff; border-top: 5px solid #78350f; padding: 15px; flex-shrink: 0; height: 32%; overflow-y: auto; }
+        .report-title { font-size: 1.2em; font-weight: 900; color: #78350f; margin-bottom: 8px; }
     </style>
 </head>
 <body class="p-0 sm:p-3">
 
-    <div class="main-container bg-white shadow-2xl sm:rounded-3xl overflow-hidden border-4 border-amber-900/20">
+    <div class="main-container bg-white shadow-2xl sm:rounded-3xl border-4 border-amber-900/20">
         
         <div class="px-5 py-3 bg-amber-950 text-white flex flex-wrap justify-between items-center shrink-0">
-            <h1 class="font-black text-2xl tracking-tighter italic">CLASS ADMIN <span class="text-amber-500">v11</span></h1>
+            <h1 class="font-black text-2xl italic">CLASS ADMIN <span class="text-amber-500">v13</span></h1>
             <div class="flex items-center gap-6">
-                <div class="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full">
-                    <span class="text-xs font-bold uppercase">Font Size</span>
-                    <input type="range" min="14" max="34" value="16" id="fontSizeSlider" class="accent-amber-500" oninput="updateFontSize(this.value)">
-                    <span id="fontSizeVal" class="text-sm font-mono font-bold w-12 text-amber-400">16px</span>
+                <div class="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full hidden sm:flex">
+                    <span class="text-xs font-bold uppercase">字體大小</span>
+                    <input type="range" min="14" max="34" value="16" oninput="updateFontSize(this.value)">
                 </div>
-                <button onclick="exportExcel()" class="bg-emerald-500 hover:bg-emerald-600 px-6 py-2 rounded-xl font-black text-sm shadow-lg transition">EXCEL 匯出</button>
+                <button onclick="exportExcel()" class="bg-emerald-500 hover:bg-emerald-600 px-6 py-2 rounded-xl font-black text-sm shadow-lg border-2 border-emerald-400">📊 匯出全學期總表</button>
             </div>
         </div>
 
-        <div class="p-4 flex flex-wrap items-center justify-between gap-4 bg-orange-50/80 shrink-0 border-b shadow-inner">
-            <div class="flex items-center gap-6">
-                <input type="date" id="currentDate" class="bg-white border-2 border-amber-300 rounded-xl p-2 font-black text-amber-900 shadow-sm" onchange="renderAll()">
-                <div class="flex items-center gap-3">
-                    <label class="text-sm font-black text-amber-800 uppercase">Students:</label>
-                    <input type="number" id="studentCount" value="5" class="w-20 p-2 border-2 border-amber-200 rounded-xl font-black text-center text-lg" onchange="saveAndRender()">
+        <div class="p-4 flex flex-wrap items-center justify-between gap-4 bg-orange-50 shrink-0 border-b">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-black text-amber-800">人數:</label>
+                    <input type="number" id="studentCount" value="5" class="w-16 p-2 border-2 border-amber-200 rounded-xl font-black text-center" onchange="saveAndRender()">
+                </div>
+                <div class="flex items-center gap-2 bg-amber-100 p-2 rounded-xl border border-amber-300">
+                    <span class="text-sm font-black text-amber-900">📅 出缺勤日期:</span>
+                    <input type="date" id="currentDate" class="bg-white border rounded p-1 font-bold text-amber-900" onchange="renderAll()">
                 </div>
             </div>
             <div id="taskInputGroup" class="flex gap-2">
-                <input type="text" id="taskName" placeholder="新作業..." class="w-40 p-2 border-2 border-amber-200 rounded-xl font-bold shadow-sm focus:border-amber-600 outline-none">
-                <button onclick="addTask()" class="bg-amber-900 text-white px-6 py-2 rounded-xl font-black hover:scale-105 transition">＋ 新增</button>
+                <input type="text" id="taskName" placeholder="新增全域作業..." class="w-40 p-2 border-2 border-amber-200 rounded-xl font-bold outline-none focus:border-amber-600">
+                <button onclick="addTask()" class="bg-amber-900 text-white px-5 py-2 rounded-xl font-black hover:scale-105">新增</button>
             </div>
         </div>
 
         <div class="flex shrink-0">
-            <button id="btnTaskTab" onclick="switchTab('task')" class="tab-btn py-5 tab-active">📋 作業進度管理</button>
-            <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn py-5 tab-inactive border-l border-amber-900/10">📅 出缺勤統計</button>
+            <button id="btnTaskTab" onclick="switchTab('task')" class="tab-btn tab-active">📋 作業進度 (永久紀錄)</button>
+            <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive border-l border-amber-900/10">📅 每日出缺勤 (依日期)</button>
         </div>
 
         <div id="taskView" class="scroll-section">
@@ -124,38 +105,35 @@
 
         <div id="attView" class="scroll-section hidden">
             <table class="w-full border-collapse">
-                <thead><tr><th class="p-5 w-24 sticky-idx">座號</th><th class="p-5 text-left font-black text-xl">今日出勤狀態點選</th></tr></thead>
+                <thead><tr><th class="p-5 w-24 sticky-idx">座號</th><th class="p-5 text-left font-black text-xl text-amber-900">該日出勤狀態點選</th></tr></thead>
                 <tbody id="attendanceBody"></tbody>
             </table>
         </div>
 
         <div class="report-section">
-            <div class="report-grid">
-                <div class="report-card">
-                    <div class="report-title">📌 未完成清單彙整</div>
-                    <div id="taskReport" class="space-y-2 text-lg font-bold text-slate-700"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-fdf6e3 p-4 rounded-xl border border-amber-200">
+                    <div class="report-title">📌 未完成作業清單</div>
+                    <div id="taskReport" class="text-lg font-bold"></div>
                 </div>
-                <div class="report-card border-orange-300">
-                    <div class="report-title text-orange-700">📌 今日狀態異動</div>
+                <div class="bg-white p-4 rounded-xl border border-orange-300 shadow-sm">
+                    <div class="report-title text-orange-700">📌 此日狀態異動</div>
                     <div id="attReport" class="flex flex-wrap gap-2 text-lg"></div>
                 </div>
-            </div>
-            <div class="mt-4 text-right">
-                <button onclick="clearAllData()" class="text-xs text-gray-400 hover:text-red-500 underline transition">清除所有歷史數據</button>
             </div>
         </div>
     </div>
 
     <script>
-        let history = {};
         let tasks = [];
+        let globalTaskData = {};
+        let historyAtt = {};
+        
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
         function updateFontSize(val) {
             document.documentElement.style.setProperty('--base-font-size', val + 'px');
-            document.getElementById('fontSizeVal').innerText = val + 'px';
-            localStorage.setItem('v11_font_size', val);
         }
 
         function switchTab(tab) {
@@ -164,42 +142,42 @@
             document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             document.getElementById('taskInputGroup').classList.toggle('hidden', tab !== 'task');
             
-            document.getElementById('btnTaskTab').className = `tab-btn py-5 ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`;
-            document.getElementById('btnAttTab').className = `tab-btn py-5 ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
-            renderAll();
+            document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`;
+            document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
         }
 
         function init() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('currentDate').value = today;
+            document.getElementById('currentDate').value = new Date().toISOString().split('T')[0];
 
-            const h = localStorage.getItem('v11_history');
-            const t = localStorage.getItem('v11_tasks');
-            const c = localStorage.getItem('v11_count');
-            const f = localStorage.getItem('v11_font_size');
-            
-            if (h) history = JSON.parse(h);
-            if (t) tasks = JSON.parse(t);
-            if (c) document.getElementById('studentCount').value = c;
-            if (f) { updateFontSize(f); document.getElementById('fontSizeSlider').value = f; }
-            
+            const t = localStorage.getItem('v13_tasks') || localStorage.getItem('v12_tasks');
+            const gtd = localStorage.getItem('v13_globalTaskData') || localStorage.getItem('v12_globalTaskData');
+            const ha = localStorage.getItem('v13_historyAtt') || localStorage.getItem('v12_historyAtt');
+            const c = localStorage.getItem('v13_count') || localStorage.getItem('v12_count');
+
+            if(t) tasks = JSON.parse(t);
+            if(gtd) globalTaskData = JSON.parse(gtd);
+            if(ha) historyAtt = JSON.parse(ha);
+            if(c) document.getElementById('studentCount').value = c;
+
             renderAll();
         }
 
         function saveAndRender() {
-            localStorage.setItem('v11_history', JSON.stringify(history));
-            localStorage.setItem('v11_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v11_count', document.getElementById('studentCount').value);
+            localStorage.setItem('v13_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v13_globalTaskData', JSON.stringify(globalTaskData));
+            localStorage.setItem('v13_historyAtt', JSON.stringify(historyAtt));
+            localStorage.setItem('v13_count', document.getElementById('studentCount').value);
             renderAll();
         }
 
         function renderAll() {
             const date = document.getElementById('currentDate').value;
             const count = parseInt(document.getElementById('studentCount').value) || 0;
-            if (!history[date]) history[date] = { taskData: {}, attData: {} };
-            const dateInfo = history[date];
+            
+            if (!historyAtt[date]) historyAtt[date] = {};
+            const todaysAtt = historyAtt[date];
 
-            // 1. 作業
+            // 1. 渲染全域作業
             const tHeader = document.getElementById('taskHeader');
             const tBody = document.getElementById('taskBody');
             tHeader.innerHTML = '<th class="p-5 w-24 sticky-idx border-b-4 border-amber-900/20">座號</th>';
@@ -213,7 +191,7 @@
             for (let i = 1; i <= count; i++) {
                 let row = `<tr class="hover:bg-amber-50/50"><td class="p-4 border-b border-amber-100 text-center font-black sticky-idx text-2xl">${i}</td>`;
                 tasks.forEach(t => {
-                    const s = (dateInfo.taskData[i] && dateInfo.taskData[i][t]) || 0;
+                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
                     const lbls = ["未交", "待訂", "完成"];
                     row += `<td class="p-3 border-b border-amber-100">
                         <button onclick="cycleTask(${i},'${t}')" class="square-btn task-${s}">
@@ -225,72 +203,117 @@
                 tBody.innerHTML += row + '</tr>';
             }
 
-            // 2. 出勤
+            // 2. 渲染單日出勤
             const aBody = document.getElementById('attendanceBody');
             aBody.innerHTML = '';
             for (let i = 1; i <= count; i++) {
-                const s = dateInfo.attData[i] || 0;
+                const s = todaysAtt[i] || 0;
                 aBody.innerHTML += `<tr>
                     <td class="p-5 border-b border-amber-100 text-center font-black sticky-idx bg-amber-50 text-3xl">${i}</td>
                     <td class="p-4 border-b border-amber-100">
-                        <div class="flex flex-wrap gap-4">
-                            <button onclick="cycleAttendance(${i})" class="square-btn att-${s} max-w-[150px]">
-                                <span class="btn-idx">${i}</span>
-                                <span class="btn-text text-xl">${attLabels[s]}</span>
-                            </button>
-                        </div>
+                        <button onclick="cycleAttendance(${i})" class="square-btn att-${s} max-w-[150px]">
+                            <span class="btn-idx">${i}</span>
+                            <span class="btn-text text-xl">${attLabels[s]}</span>
+                        </button>
                     </td>
                 </tr>`;
             }
 
-            // 3. 總覽彙整
+            // 3. 總覽彙整 (重點更新區塊)
             const tReport = document.getElementById('taskReport');
             const aReport = document.getElementById('attReport');
             tReport.innerHTML = ''; aReport.innerHTML = '';
 
+            // 作業：區分未交與待訂正
             tasks.forEach(t => {
-                let m = []; for(let i=1; i<=count; i++) if((dateInfo.taskData[i]||{})[t] !== 2) m.push(i);
-                if(m.length) tReport.innerHTML += `<div><span class="text-amber-900 font-black">【${t}】</span> <span class="text-red-600 tracking-tighter">${m.join(', ')} 號</span></div>`;
-                else tReport.innerHTML += `<div class="text-emerald-600 font-bold italic">【${t}】 全員達標 ✓</div>`;
+                let missing = [];   // 狀態 0
+                let correction = []; // 狀態 1
+
+                for (let i = 1; i <= count; i++) {
+                    const s = (globalTaskData[i] || {})[t] || 0;
+                    if (s === 0) missing.push(i);
+                    else if (s === 1) correction.push(i);
+                }
+
+                if (missing.length === 0 && correction.length === 0) {
+                    // 全員完成
+                    tReport.innerHTML += `<div class="text-emerald-600 font-bold italic mb-3">【${t}】 全員達標 ✓</div>`;
+                } else {
+                    // 有人未交或待訂正
+                    let reportHtml = `<div class="mb-4 border-l-4 border-amber-400 pl-3 bg-white/50 py-2 rounded-r-lg">
+                                        <div class="text-amber-900 font-black mb-1 text-xl">【${t}】</div>`;
+                    if (missing.length > 0) {
+                        reportHtml += `<div class="text-red-600 tracking-wider">❌ 未交：${missing.join(', ')} 號</div>`;
+                    }
+                    if (correction.length > 0) {
+                        reportHtml += `<div class="text-orange-600 tracking-wider mt-1">⚠️ 待訂正：${correction.join(', ')} 號</div>`;
+                    }
+                    reportHtml += `</div>`;
+                    tReport.innerHTML += reportHtml;
+                }
             });
 
+            // 出勤看當日
             let atts = [];
-            for(let i=1; i<=count; i++) if(dateInfo.attData[i] > 0) atts.push(`<span class="bg-white border-2 border-orange-200 px-4 py-1 rounded-full font-black text-orange-800">${i}號 (${attLabels[dateInfo.attData[i]]})</span>`);
-            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-gray-400 italic">今日目前無異動...</span>';
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white border-2 border-orange-200 px-3 py-1 rounded-full font-black text-orange-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-gray-400 italic">該日全員出席</span>';
         }
 
-        // 功能
         function addTask() {
             const val = document.getElementById('taskName').value.trim();
             if (!val || tasks.includes(val)) return;
             tasks.push(val); document.getElementById('taskName').value = ''; saveAndRender();
         }
         function cycleTask(id, t) {
-            const d = document.getElementById('currentDate').value;
-            if(!history[d].taskData[id]) history[d].taskData[id]={};
-            history[d].taskData[id][t] = ((history[d].taskData[id][t]||0)+1)%3; saveAndRender();
+            if(!globalTaskData[id]) globalTaskData[id]={};
+            globalTaskData[id][t] = ((globalTaskData[id][t]||0)+1)%3; saveAndRender();
         }
         function cycleAttendance(id) {
             const d = document.getElementById('currentDate').value;
-            history[d].attData[id] = ((history[d].attData[id]||0)+1)%6; saveAndRender();
+            if(!historyAtt[d]) historyAtt[d] = {};
+            historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveAndRender();
         }
         function deleteTask(i) { if(confirm('確定移除作業欄位？')) { tasks.splice(i, 1); saveAndRender(); } }
-        function clearAllData() { if(confirm('⚠️ 注意：這將刪除所有歷史紀錄，無法復原！')) { localStorage.clear(); location.reload(); } }
+
         function exportExcel() {
-            const date = document.getElementById('currentDate').value;
-            const info = history[date];
             const count = parseInt(document.getElementById('studentCount').value);
-            let data = [];
-            for (let i = 1; i <= count; i++) {
-                let obj = { '日期': date, '座號': i, '出勤狀況': attLabels[info.attData[i]||0] };
-                tasks.forEach(t => obj[t] = ["未交", "待訂正", "已完成"][(info.taskData[i]||{})[t]||0]);
-                data.push(obj);
-            }
-            const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "統計結果");
-            XLSX.writeFile(wb, `班級統計表_${date}.xlsx`);
+
+            // Sheet 1: 全域作業總表
+            let taskRows = [];
+            for (let i = 1; i <= count; i++) {
+                let row = { '座號': i };
+                tasks.forEach(t => {
+                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
+                    row[t] = ["未交", "待訂正", "已完成"][s];
+                });
+                taskRows.push(row);
+            }
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
+
+            // Sheet 2: 出缺勤全學期統計表
+            let attRows = [];
+            const allDates = Object.keys(historyAtt).sort();
+            for (let i = 1; i <= count; i++) {
+                let row = { '座號': i };
+                let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; 
+                
+                allDates.forEach(d => {
+                    const s = historyAtt[d][i] || 0;
+                    row[d] = attLabels[s];
+                    if(s > 0) stats[s]++;
+                });
+                
+                row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3];
+                row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5];
+                
+                attRows.push(row);
+            }
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤學期總表");
+
+            XLSX.writeFile(wb, `班級學期總表_${new Date().toLocaleDateString()}.xlsx`);
         }
+
         init();
     </script>
 </body>
