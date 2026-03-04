@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v13 - 狀態清晰版</title>
+    <title>班級管理系統 v14 - 四年忠班</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style id="dynamicStyles">
@@ -59,12 +59,12 @@
         .report-title { font-size: 1.2em; font-weight: 900; color: #78350f; margin-bottom: 8px; }
     </style>
 </head>
-<body class="p-0 sm:p-3">
+<body class="p-0 sm:p-3 relative">
 
     <div class="main-container bg-white shadow-2xl sm:rounded-3xl border-4 border-amber-900/20">
         
         <div class="px-5 py-3 bg-amber-950 text-white flex flex-wrap justify-between items-center shrink-0">
-            <h1 class="font-black text-2xl italic">CLASS ADMIN <span class="text-amber-500">v13</span></h1>
+            <h1 class="font-black text-2xl italic">CLASS ADMIN <span class="text-amber-500">v14</span></h1>
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full hidden sm:flex">
                     <span class="text-xs font-bold uppercase">字體大小</span>
@@ -112,16 +112,34 @@
 
         <div class="report-section">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-fdf6e3 p-4 rounded-xl border border-amber-200">
-                    <div class="report-title">📌 未完成作業清單</div>
-                    <div id="taskReport" class="text-lg font-bold"></div>
+                <div class="bg-[#fdf6e3] p-4 rounded-xl border border-amber-200 flex flex-col">
+                    <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-amber-100 p-2 -ml-2 -mt-2 rounded-lg transition group">
+                        <span>📌 未完成作業清單</span>
+                        <span class="text-sm bg-amber-200 text-amber-800 px-3 py-1 rounded-lg opacity-80 group-hover:opacity-100 flex items-center gap-1 shadow-sm">
+                            <span class="text-lg">⤢</span> 全螢幕投影
+                        </span>
+                    </button>
+                    <div id="taskReport" class="text-lg font-bold flex-1 overflow-y-auto mt-2"></div>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-orange-300 shadow-sm">
                     <div class="report-title text-orange-700">📌 此日狀態異動</div>
-                    <div id="attReport" class="flex flex-wrap gap-2 text-lg"></div>
+                    <div id="attReport" class="flex flex-wrap gap-2 text-lg mt-2"></div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="fullScreenOverlay" class="fixed inset-0 z-50 bg-[#fdf6e3] hidden flex-col">
+        <div class="p-6 bg-amber-950 text-white flex justify-between items-center shadow-lg shrink-0">
+            <h1 class="text-4xl md:text-5xl font-black tracking-widest flex items-center gap-4">
+                <span class="text-amber-400">📢</span> 未完成作業總覽
+            </h1>
+            <button onclick="toggleFullScreen()" class="bg-red-500 hover:bg-red-600 px-8 py-4 rounded-2xl text-2xl font-black shadow-xl transition transform hover:scale-105 flex items-center gap-2 border-4 border-red-700">
+                <span>✖</span> 返回系統
+            </button>
+        </div>
+        <div id="fullScreenContent" class="p-8 md:p-16 flex-1 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]">
+            </div>
     </div>
 
     <script>
@@ -146,13 +164,26 @@
             document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
         }
 
+        // 全螢幕切換功能
+        function toggleFullScreen() {
+            const overlay = document.getElementById('fullScreenOverlay');
+            if(overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            } else {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
+        }
+
         function init() {
             document.getElementById('currentDate').value = new Date().toISOString().split('T')[0];
 
-            const t = localStorage.getItem('v13_tasks') || localStorage.getItem('v12_tasks');
-            const gtd = localStorage.getItem('v13_globalTaskData') || localStorage.getItem('v12_globalTaskData');
-            const ha = localStorage.getItem('v13_historyAtt') || localStorage.getItem('v12_historyAtt');
-            const c = localStorage.getItem('v13_count') || localStorage.getItem('v12_count');
+            // 支援向上兼容讀取 v14/v13/v12 數據
+            const t = localStorage.getItem('v14_tasks') || localStorage.getItem('v13_tasks') || localStorage.getItem('v12_tasks');
+            const gtd = localStorage.getItem('v14_globalTaskData') || localStorage.getItem('v13_globalTaskData') || localStorage.getItem('v12_globalTaskData');
+            const ha = localStorage.getItem('v14_historyAtt') || localStorage.getItem('v13_historyAtt') || localStorage.getItem('v12_historyAtt');
+            const c = localStorage.getItem('v14_count') || localStorage.getItem('v13_count') || localStorage.getItem('v12_count');
 
             if(t) tasks = JSON.parse(t);
             if(gtd) globalTaskData = JSON.parse(gtd);
@@ -163,10 +194,10 @@
         }
 
         function saveAndRender() {
-            localStorage.setItem('v13_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v13_globalTaskData', JSON.stringify(globalTaskData));
-            localStorage.setItem('v13_historyAtt', JSON.stringify(historyAtt));
-            localStorage.setItem('v13_count', document.getElementById('studentCount').value);
+            localStorage.setItem('v14_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v14_globalTaskData', JSON.stringify(globalTaskData));
+            localStorage.setItem('v14_historyAtt', JSON.stringify(historyAtt));
+            localStorage.setItem('v14_count', document.getElementById('studentCount').value);
             renderAll();
         }
 
@@ -219,15 +250,18 @@
                 </tr>`;
             }
 
-            // 3. 總覽彙整 (重點更新區塊)
+            // 3. 總覽彙整 (同步渲染正常版與全螢幕版)
             const tReport = document.getElementById('taskReport');
+            const fsReport = document.getElementById('fullScreenContent');
             const aReport = document.getElementById('attReport');
-            tReport.innerHTML = ''; aReport.innerHTML = '';
+            tReport.innerHTML = ''; fsReport.innerHTML = ''; aReport.innerHTML = '';
 
-            // 作業：區分未交與待訂正
+            // 作業：區分未交與待訂正，並雙向渲染
+            let hasUnfinished = false;
+
             tasks.forEach(t => {
-                let missing = [];   // 狀態 0
-                let correction = []; // 狀態 1
+                let missing = [];   
+                let correction = []; 
 
                 for (let i = 1; i <= count; i++) {
                     const s = (globalTaskData[i] || {})[t] || 0;
@@ -236,22 +270,37 @@
                 }
 
                 if (missing.length === 0 && correction.length === 0) {
-                    // 全員完成
-                    tReport.innerHTML += `<div class="text-emerald-600 font-bold italic mb-3">【${t}】 全員達標 ✓</div>`;
+                    // 全員完成 (小畫面顯示，大畫面隱藏)
+                    tReport.innerHTML += `<div class="text-emerald-600 font-bold italic mb-2">【${t}】 全員達標 ✓</div>`;
                 } else {
-                    // 有人未交或待訂正
-                    let reportHtml = `<div class="mb-4 border-l-4 border-amber-400 pl-3 bg-white/50 py-2 rounded-r-lg">
+                    hasUnfinished = true;
+                    // --- 小畫面版本 ---
+                    let reportHtml = `<div class="mb-3 border-l-4 border-amber-400 pl-3 bg-white/50 py-2 rounded-r-lg">
                                         <div class="text-amber-900 font-black mb-1 text-xl">【${t}】</div>`;
-                    if (missing.length > 0) {
-                        reportHtml += `<div class="text-red-600 tracking-wider">❌ 未交：${missing.join(', ')} 號</div>`;
-                    }
-                    if (correction.length > 0) {
-                        reportHtml += `<div class="text-orange-600 tracking-wider mt-1">⚠️ 待訂正：${correction.join(', ')} 號</div>`;
-                    }
+                    if (missing.length > 0) reportHtml += `<div class="text-red-600 tracking-wider">❌ 未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) reportHtml += `<div class="text-orange-600 tracking-wider mt-1">⚠️ 待訂正：${correction.join(', ')} 號</div>`;
                     reportHtml += `</div>`;
                     tReport.innerHTML += reportHtml;
+
+                    // --- 全螢幕大字體版本 ---
+                    let fsHtml = `<div class="mb-8 border-l-[12px] border-amber-400 pl-8 bg-white py-8 rounded-r-3xl shadow-sm">
+                                    <div class="text-amber-950 font-black mb-4 text-4xl md:text-5xl">【${t}】</div>`;
+                    if (missing.length > 0) {
+                        fsHtml += `<div class="text-red-600 font-black text-4xl md:text-5xl tracking-[0.2em] leading-relaxed mt-4">❌ 未交：${missing.join(', ')} 號</div>`;
+                    }
+                    if (correction.length > 0) {
+                        fsHtml += `<div class="text-orange-600 font-black text-4xl md:text-5xl tracking-[0.2em] leading-relaxed mt-6">⚠️ 待訂正：${correction.join(', ')} 號</div>`;
+                    }
+                    fsHtml += `</div>`;
+                    fsReport.innerHTML += fsHtml;
                 }
             });
+
+            if (!hasUnfinished) {
+                fsReport.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-emerald-600 font-black text-6xl mt-20">
+                    <div>🎉 太棒了！</div><div class="mt-8">目前全班作業皆已完成！</div>
+                </div>`;
+            }
 
             // 出勤看當日
             let atts = [];
