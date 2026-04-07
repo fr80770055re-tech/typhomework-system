@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 - Hao Yu</title>
+    <title>班級管理系統 v19 - 清晰優雅版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style id="dynamicStyles">
         :root { --base-font-size: 16px; }
         
-        /* 套用可愛字體與柔和漸層背景 */
         body { 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
             font-size: var(--base-font-size);
-            font-family: 'Nunito', 'M PLUS Rounded 1c', "Microsoft JhengHei", sans-serif; /* 圓潤字體優先 */
+            /* 優先使用英數字體，再 fallback 到思源黑體 */
+            font-family: 'Nunito', 'Noto Sans TC', "Microsoft JhengHei", sans-serif; 
             -webkit-font-smoothing: antialiased;
             background-color: #f0ebe1;
             background-image: 
@@ -22,10 +22,9 @@
                 radial-gradient(at 100% 100%, hsla(200, 30%, 85%, 1) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, hsla(350, 30%, 88%, 1) 0px, transparent 50%);
             background-attachment: fixed;
-            letter-spacing: 0.02em; /* 稍微拉開字距增加可愛感 */
+            letter-spacing: 0.03em; /* 微微拉開字距，讓細字體更好閱讀 */
         }
 
-        /* --- 毛玻璃共用類別 (Glassmorphism) --- */
         .glass-panel {
             background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(12px);
@@ -39,34 +38,31 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        ::-webkit-scrollbar { width: 12px; height: 12px; } /* 滾動條變胖一點更可愛 */
+        ::-webkit-scrollbar { width: 10px; height: 10px; } 
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: rgba(187, 174, 160, 0.6); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(140, 130, 115, 0.8); border: 3px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb { background: rgba(187, 174, 160, 0.6); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(140, 130, 115, 0.8); border: 2px solid transparent; background-clip: padding-box; }
 
         .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; width: 100%; }
         .scroll-section { flex: 1; overflow: auto; background: transparent; }
         
-        /* 狀態按鈕與動畫 (更加圓潤) */
         .state-btn {
             width: 100%; min-width: 60px; height: 55px;
-            border-radius: 18px; /* 圓角加大 */
-            font-weight: 900; font-size: 1.15em;
+            border-radius: 16px; 
+            font-weight: 700; font-size: 1.1em; /* 從 900 降為 700 */
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: 2px solid rgba(255,255,255,0.6);
             transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             backdrop-filter: blur(4px);
         }
         
-        .state-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); filter: brightness(1.05); }
-        .state-btn:active { transform: scale(0.9) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
+        .state-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); filter: brightness(1.03); }
+        .state-btn:active { transform: scale(0.92) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
 
-        /* 作業狀態顏色 (粉彩/莫蘭迪) */
         .task-0 { background-color: rgba(230, 232, 235, 0.7); color: #606873; } 
         .task-1 { background-color: rgba(238, 191, 165, 0.9); color: #8a4523; } 
         .task-2 { background-color: rgba(163, 193, 218, 0.9); color: #2c4a6b; } 
 
-        /* 出勤狀態顏色 */
         .att-0 { background-color: rgba(168, 213, 186, 0.9); color: #2b593f; }
         .att-1 { background-color: rgba(235, 215, 158, 0.9); color: #7a6320; }
         .att-2 { background-color: rgba(227, 168, 168, 0.9); color: #6e2727; }
@@ -74,27 +70,25 @@
         .att-4 { background-color: rgba(189, 195, 199, 0.9); color: #434a52; }
         .att-5 { background-color: rgba(203, 187, 224, 0.9); color: #4a3666; }
 
-        /* 座號圓角標籤 */
         .btn-idx { 
-            position: absolute; top: 0; left: 0; font-size: 0.7em; font-weight: 900; 
-            background: rgba(0,0,0,0.06); color: inherit; padding: 3px 8px; border-radius: 16px 0 16px 0; z-index: 10;
+            position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 600; 
+            background: rgba(0,0,0,0.05); color: inherit; padding: 3px 8px; border-radius: 14px 0 14px 0; z-index: 10;
         }
-        .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 5px; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+        .btn-text { font-size: 1.1em; font-weight: 700; line-height: 1.2; z-index: 5; margin-top: 6px; }
 
         table { border-collapse: separate; border-spacing: 0; }
         
-        /* 表格固定表頭 */
-        th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
+        th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 700; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
         th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; }
         .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.85); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
         th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
 
-        .tab-btn { flex: 1; padding: 15px 0; font-weight: 900; font-size: 1.2em; transition: 0.2s; border-radius: 16px 16px 0 0; }
-        .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 5px solid #9aa5b1; }
+        .tab-btn { flex: 1; padding: 15px 0; font-weight: 700; font-size: 1.1em; transition: 0.2s; border-radius: 16px 16px 0 0; }
+        .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 4px solid #9aa5b1; }
         .tab-inactive { background-color: rgba(255,255,255,0.2); color: #a39b8e; }
 
         .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 15px; flex-shrink: 0; height: 32%; overflow-y: auto; }
-        .report-title { font-size: 1.2em; font-weight: 900; color: #6b6356; margin-bottom: 8px; }
+        .report-title { font-size: 1.2em; font-weight: 700; color: #6b6356; margin-bottom: 8px; }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -102,44 +96,44 @@
     <div class="main-container glass-panel sm:rounded-[2rem] shadow-2xl">
         
         <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2rem]">
-            <h1 class="font-black text-3xl tracking-wide">班級事務管理系統 <span class="text-stone-400 font-bold text-xl">v18</span></h1>
+            <h1 class="font-bold text-2xl tracking-wide">Class Admin <span class="text-stone-400 font-medium text-lg ml-1">v19</span></h1>
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-3 bg-white/10 px-5 py-2 rounded-full hidden sm:flex">
-                    <span class="text-sm font-bold text-stone-200">文字縮放</span>
+                    <span class="text-sm font-medium text-stone-200">文字縮放</span>
                     <input type="range" min="14" max="34" value="16" oninput="updateFontSize(this.value)" class="opacity-80">
                 </div>
-                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-6 py-2.5 rounded-2xl font-black text-base shadow-lg transition text-white border border-white/20">匯出總表</button>
+                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-6 py-2 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">匯出總表</button>
             </div>
         </div>
 
         <div class="p-4 flex flex-wrap items-center justify-between gap-4 bg-white/30 shrink-0 border-b border-white/50">
             <div class="flex items-center gap-3">
-                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-2xl shadow-sm border border-white/60">
-                    <label class="text-base font-black text-stone-600">全班人數:</label>
-                    <input type="number" id="studentCount" value="5" class="w-16 bg-transparent font-black text-center outline-none text-stone-700 text-lg" onchange="saveAndRender()">
+                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
+                    <label class="text-sm font-bold text-stone-600">全班人數:</label>
+                    <input type="number" id="studentCount" value="5" class="w-14 bg-transparent font-bold text-center outline-none text-stone-700 text-base" onchange="saveAndRender()">
                 </div>
-                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-2xl shadow-sm border border-white/60">
-                    <span class="text-base font-black text-stone-600">📅</span>
-                    <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-base" onchange="renderAll()">
+                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
+                    <span class="text-base">📅</span>
+                    <input type="date" id="currentDate" class="bg-transparent border-none font-bold text-stone-700 outline-none text-sm" onchange="renderAll()">
                 </div>
-                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-5 py-2 rounded-2xl font-black text-base hover:bg-[#c99070] shadow-md flex items-center gap-2 transition border border-white/40">
+                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#c99070] shadow-sm flex items-center gap-2 transition border border-white/40">
                     📣 宣導事項
                 </button>
-                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-5 py-2 rounded-2xl font-black text-base hover:bg-[#7b8794] shadow-md flex items-center gap-2 transition border border-white/40">
+                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#7b8794] shadow-sm flex items-center gap-2 transition border border-white/40">
                     📝 隱私記事
                 </button>
             </div>
             <div id="taskInputGroup" class="flex gap-2">
-                <input type="text" id="taskName" placeholder="新增一項作業..." class="w-48 p-2.5 border-2 border-white/80 rounded-2xl font-black outline-none focus:border-stone-400 bg-white/60 shadow-sm text-base">
-                <button onclick="addTask()" class="bg-[#6b6356] text-white px-6 py-2.5 rounded-2xl font-black text-base hover:bg-[#524c42] shadow-md transition border border-white/20">新增</button>
+                <input type="text" id="taskName" placeholder="新增一項作業..." class="w-48 p-2 border border-white/80 rounded-xl font-medium outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
+                <button onclick="addTask()" class="bg-[#6b6356] text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
             </div>
         </div>
 
         <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-8 py-5">
-            <h2 class="text-lg font-black text-[#8a4523] flex items-center gap-2 mb-2">
-                <span class="text-2xl">📣</span> <span>現在應完成之事項</span>
+            <h2 class="text-lg font-bold text-[#8a4523] flex items-center gap-2 mb-2">
+                <span class="text-xl">📣</span> <span>現在應完成之事項</span>
             </h2>
-            <ul id="announceList" class="list-disc list-inside text-stone-800 font-black text-2xl space-y-2 ml-2 leading-relaxed tracking-wide"></ul>
+            <ul id="announceList" class="list-disc list-inside text-stone-800 font-bold text-xl space-y-2 ml-2 leading-relaxed"></ul>
         </div>
 
         <div class="flex shrink-0 px-2 pt-2 gap-1 bg-white/10">
@@ -163,40 +157,40 @@
 
         <div class="report-section glass-panel sm:rounded-b-[2rem] border-t-0">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                <div class="bg-white/60 p-5 rounded-[1.5rem] border border-white flex flex-col shadow-sm">
+                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm">
                     <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-2 -ml-2 -mt-2 rounded-xl transition group">
-                        <span class="text-xl">📌 未完成作業彙整</span>
-                        <span class="text-sm bg-stone-500/10 text-stone-800 px-4 py-1.5 rounded-xl opacity-80 group-hover:opacity-100 flex items-center gap-2 shadow-sm border border-white/60 font-bold">
-                            <span class="text-lg">⤢</span> 全螢幕投影
+                        <span class="text-lg font-bold">📌 未完成作業彙整</span>
+                        <span class="text-sm bg-stone-500/10 text-stone-700 px-4 py-1.5 rounded-lg opacity-80 group-hover:opacity-100 flex items-center gap-2 shadow-sm border border-white/60 font-medium">
+                            <span class="text-base">⤢</span> 全螢幕投影
                         </span>
                     </button>
-                    <div id="taskReport" class="text-lg font-bold flex-1 overflow-y-auto mt-2 text-stone-700"></div>
+                    <div id="taskReport" class="text-base font-medium flex-1 overflow-y-auto mt-2 text-stone-700"></div>
                 </div>
-                <div class="bg-white/60 p-5 rounded-[1.5rem] border border-white flex flex-col shadow-sm">
-                    <div class="report-title text-stone-600 text-xl">📌 今日狀態異動</div>
-                    <div id="attReport" class="flex flex-wrap gap-2 text-lg mt-2 text-stone-700 flex-1 overflow-y-auto"></div>
+                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm">
+                    <div class="report-title text-stone-600 text-lg font-bold">📌 今日狀態異動</div>
+                    <div id="attReport" class="flex flex-wrap gap-2 text-base mt-2 text-stone-700 flex-1 overflow-y-auto font-medium"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-2xl hidden flex-col">
+    <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col">
         <div class="p-6 bg-[#4a4a48]/90 backdrop-blur-md text-white flex justify-between items-center shadow-lg shrink-0 border-b border-white/20">
-            <h1 class="text-4xl md:text-5xl font-black tracking-widest flex items-center gap-4 text-stone-100">今日任務總覽</h1>
-            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-8 py-3 rounded-2xl text-2xl font-black shadow-lg transition transform hover:scale-105 flex items-center gap-2 border border-white/50">退出投影</button>
+            <h1 class="text-3xl md:text-4xl font-bold tracking-widest flex items-center gap-4 text-stone-100">今日任務總覽</h1>
+            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-6 py-2 rounded-xl text-xl font-bold shadow-md transition transform hover:scale-105 flex items-center gap-2 border border-white/50">退出投影</button>
         </div>
         
         <div id="fullScreenContent" class="p-8 md:p-16 flex-1 overflow-y-auto flex flex-col gap-10">
-            <div id="fsAnnounceCard" class="hidden bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-10 border-4 border-white shadow-2xl">
-                <h2 class="text-4xl font-black text-[#8a4523] mb-8 flex items-center gap-4">
-                    <span class="text-5xl">📣</span> 宣導與注意事項
+            <div id="fsAnnounceCard" class="hidden bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl">
+                <h2 class="text-3xl font-bold text-[#8a4523] mb-6 flex items-center gap-4">
+                    <span class="text-4xl">📣</span> 宣導與注意事項
                 </h2>
-                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-black text-5xl md:text-6xl space-y-6 leading-normal ml-6 tracking-wide"></ul>
+                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-bold text-4xl md:text-5xl space-y-6 leading-relaxed ml-4"></ul>
             </div>
 
-            <div id="fsTaskCard" class="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-10 border-4 border-white shadow-2xl flex-1">
-                <h2 class="text-4xl font-black text-stone-600 mb-8 flex items-center gap-4">
-                    <span class="text-5xl">📌</span> 未完成作業進度
+            <div id="fsTaskCard" class="bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl flex-1">
+                <h2 class="text-3xl font-bold text-stone-600 mb-6 flex items-center gap-4">
+                    <span class="text-4xl">📌</span> 未完成作業進度
                 </h2>
                 <div id="fsTaskReport" class="space-y-8"></div>
             </div>
@@ -204,15 +198,14 @@
     </div>
 
     <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md transition-all">
-        <div class="glass-panel p-8 rounded-[2rem] w-11/12 max-w-2xl shadow-2xl border border-white">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-black text-[#8a4523] flex items-center gap-3">📣 編輯宣導事項</h2>
-                <button onclick="closeAnnounceModal()" class="text-stone-400 hover:text-red-500 font-black text-4xl transition">✕</button>
+                <h2 class="text-2xl font-bold text-[#8a4523] flex items-center gap-3">📣 編輯宣導事項</h2>
+                <button onclick="closeAnnounceModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl transition">✕</button>
             </div>
-            <p class="text-base text-stone-600 font-black mb-4">請以條列式輸入，每次換行會自動產生一個項目圓點。</p>
-            <textarea id="announceTextarea" class="w-full h-56 p-5 border-2 border-white/80 rounded-2xl outline-none focus:border-[#dfa888] resize-none text-xl font-black text-stone-700 leading-relaxed shadow-inner bg-white/70"></textarea>
+            <textarea id="announceTextarea" class="w-full h-56 p-5 border border-white/80 rounded-xl outline-none focus:border-[#dfa888] resize-none text-lg font-medium text-stone-700 leading-relaxed shadow-inner bg-white/70"></textarea>
             <div class="mt-6 flex justify-end">
-                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-10 py-3 rounded-2xl font-black text-lg shadow-lg hover:bg-[#c99070] transition border border-white/50">
+                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#c99070] transition border border-white/50">
                     儲存並發布
                 </button>
             </div>
@@ -220,17 +213,17 @@
     </div>
 
     <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md">
-        <div class="glass-panel p-8 rounded-[2rem] w-11/12 max-w-3xl shadow-2xl border border-white">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-3xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-black text-stone-700 flex items-center gap-3">
+                <h2 class="text-2xl font-bold text-stone-700 flex items-center gap-3">
                     📝 班級記事本 (私密)
-                    <span id="noteDateDisplay" class="text-lg bg-white/60 text-stone-700 px-4 py-1.5 rounded-xl font-black border border-white/50 shadow-sm"></span>
+                    <span id="noteDateDisplay" class="text-base bg-white/60 text-stone-700 px-3 py-1 rounded-lg font-bold border border-white/50 shadow-sm"></span>
                 </h2>
-                <button onclick="closeNoteModal()" class="text-stone-400 hover:text-red-500 font-black text-4xl transition">✕</button>
+                <button onclick="closeNoteModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl transition">✕</button>
             </div>
-            <textarea id="dailyNoteText" class="w-full h-72 p-6 border-2 border-white/80 rounded-2xl outline-none focus:border-[#9aa5b1] resize-none text-xl font-black text-stone-700 leading-relaxed shadow-inner bg-white/80"></textarea>
+            <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-lg font-medium text-stone-700 leading-relaxed shadow-inner bg-white/80"></textarea>
             <div class="mt-8 flex justify-end">
-                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-10 py-3 rounded-2xl font-black text-lg shadow-lg hover:bg-[#524c42] transition border border-white/30">
+                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#524c42] transition border border-white/30">
                     🔒 儲存並隱藏
                 </button>
             </div>
@@ -299,13 +292,13 @@
         function init() {
             document.getElementById('currentDate').value = new Date().toISOString().split('T')[0];
 
-            // 無縫繼承舊版資料
-            const t = localStorage.getItem('v18_tasks') || localStorage.getItem('v17_tasks') || localStorage.getItem('v16_tasks');
-            const gtd = localStorage.getItem('v18_globalTaskData') || localStorage.getItem('v17_globalTaskData') || localStorage.getItem('v16_globalTaskData');
-            const ha = localStorage.getItem('v18_historyAtt') || localStorage.getItem('v17_historyAtt') || localStorage.getItem('v16_historyAtt');
-            const c = localStorage.getItem('v18_count') || localStorage.getItem('v17_count') || localStorage.getItem('v16_count');
-            const dn = localStorage.getItem('v18_dailyNotes') || localStorage.getItem('v17_dailyNotes');
-            const ann = localStorage.getItem('v18_announcements') || localStorage.getItem('v17_announcements');
+            // 確保無縫繼承舊版資料 (支援升級到 v19)
+            const t = localStorage.getItem('v19_tasks') || localStorage.getItem('v18_tasks') || localStorage.getItem('v17_tasks');
+            const gtd = localStorage.getItem('v19_globalTaskData') || localStorage.getItem('v18_globalTaskData') || localStorage.getItem('v17_globalTaskData');
+            const ha = localStorage.getItem('v19_historyAtt') || localStorage.getItem('v18_historyAtt') || localStorage.getItem('v17_historyAtt');
+            const c = localStorage.getItem('v19_count') || localStorage.getItem('v18_count') || localStorage.getItem('v17_count');
+            const dn = localStorage.getItem('v19_dailyNotes') || localStorage.getItem('v18_dailyNotes') || localStorage.getItem('v17_dailyNotes');
+            const ann = localStorage.getItem('v19_announcements') || localStorage.getItem('v18_announcements') || localStorage.getItem('v17_announcements');
 
             if(t) tasks = JSON.parse(t);
             if(gtd) globalTaskData = JSON.parse(gtd);
@@ -318,12 +311,12 @@
         }
 
         function saveAndRender() {
-            localStorage.setItem('v18_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v18_globalTaskData', JSON.stringify(globalTaskData));
-            localStorage.setItem('v18_historyAtt', JSON.stringify(historyAtt));
-            localStorage.setItem('v18_count', document.getElementById('studentCount').value);
-            localStorage.setItem('v18_dailyNotes', JSON.stringify(dailyNotes));
-            localStorage.setItem('v18_announcements', announcements);
+            localStorage.setItem('v19_tasks', JSON.stringify(tasks));
+            localStorage.setItem('v19_globalTaskData', JSON.stringify(globalTaskData));
+            localStorage.setItem('v19_historyAtt', JSON.stringify(historyAtt));
+            localStorage.setItem('v19_count', document.getElementById('studentCount').value);
+            localStorage.setItem('v19_dailyNotes', JSON.stringify(dailyNotes));
+            localStorage.setItem('v19_announcements', announcements);
             renderAll();
         }
 
@@ -333,7 +326,7 @@
             if (!historyAtt[date]) historyAtt[date] = {};
             const todaysAtt = historyAtt[date];
 
-            // 0. 渲染宣導事項
+            // 0. 宣導事項
             const aBoard = document.getElementById('announceBoard');
             const aList = document.getElementById('announceList');
             const fsCard = document.getElementById('fsAnnounceCard');
@@ -353,28 +346,28 @@
             // 1. 座號表頭
             let studentsHeader = '';
             for(let i = 1; i <= count; i++) {
-                studentsHeader += `<th class="sticky-top min-w-[85px] text-xl font-black">${i}號</th>`;
+                studentsHeader += `<th class="sticky-top min-w-[85px] text-lg font-bold">${i}號</th>`;
             }
 
             // 2. 渲染作業表格
             const tHeader = document.getElementById('taskHeader');
             const tBody = document.getElementById('taskBody');
-            tHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-xl">📝 作業名稱</th>${studentsHeader}</tr>`;
+            tHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             
             tBody.innerHTML = '';
             tasks.forEach((t, index) => {
                 let row = `<tr>
                     <td class="sticky-left p-4 border-b border-white/50">
-                        <div class="font-black text-stone-800 text-xl mb-3 text-shadow-sm">${t}</div>
+                        <div class="font-bold text-stone-800 text-lg mb-3">${t}</div>
                         <div class="flex gap-2">
-                            <button onclick="completeAllTask('${t}')" class="text-sm font-bold bg-white/70 text-stone-700 px-3 py-2 rounded-xl flex-1 hover:bg-white border border-white/80 shadow-sm transition">✔ 全完成</button>
-                            <button onclick="deleteTask(${index})" class="text-sm font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-3 py-2 rounded-xl hover:bg-[#d69595] border border-white/50 shadow-sm transition">✕</button>
+                            <button onclick="completeAllTask('${t}')" class="text-sm font-bold bg-white/70 text-stone-700 px-3 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm transition">✔ 全完成</button>
+                            <button onclick="deleteTask(${index})" class="text-sm font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-3 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm transition">✕</button>
                         </div>
                     </td>`;
                 for (let i = 1; i <= count; i++) {
                     const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
                     const lbls = ["未交", "待訂", "完成"];
-                    row += `<td class="p-2.5 border-b border-white/50">
+                    row += `<td class="p-2 border-b border-white/50">
                         <button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}">
                             <span class="btn-idx">${i}</span>
                             <span class="btn-text">${lbls[s]}</span>
@@ -387,16 +380,16 @@
             // 3. 渲染出勤表格
             const aHeader = document.getElementById('attHeader');
             const aBody = document.getElementById('attendanceBody');
-            aHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-xl">📅 出勤項目</th>${studentsHeader}</tr>`;
+            aHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
             
             let attRow = `<tr>
                 <td class="sticky-left p-5 border-b border-white/50">
-                    <div class="font-black text-stone-800 text-xl">今日狀態</div>
-                    <div class="text-sm text-stone-500 mt-1 font-bold">點擊切換假別</div>
+                    <div class="font-bold text-stone-800 text-lg">今日狀態</div>
+                    <div class="text-sm text-stone-500 mt-1 font-medium">點擊切換假別</div>
                 </td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
-                attRow += `<td class="p-2.5 border-b border-white/50">
+                attRow += `<td class="p-2 border-b border-white/50">
                     <button onclick="cycleAttendance(${i})" class="state-btn att-${s}">
                         <span class="btn-idx">${i}</span>
                         <span class="btn-text">${attLabels[s]}</span>
@@ -421,35 +414,35 @@
                 }
 
                 if (missing.length === 0 && correction.length === 0) {
-                    tReport.innerHTML += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員達標 ✓</div>`;
+                    tReport.innerHTML += `<div class="text-[#63776d] font-bold italic mb-2">【${t}】 全員達標 ✓</div>`;
                 } else {
                     hasUnfinished = true;
                     // 小畫面
-                    let reportHtml = `<div class="mb-4 border-l-[6px] border-[#dfa888] pl-4 bg-white/70 py-3 rounded-r-xl shadow-sm">
-                                        <div class="text-stone-800 font-black mb-2 text-xl">【${t}】</div>`;
-                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-black tracking-wider">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-black tracking-wider mt-1">待訂正：${correction.join(', ')} 號</div>`;
+                    let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2.5 rounded-r-lg shadow-sm">
+                                        <div class="text-stone-800 font-bold mb-1 text-lg">【${t}】</div>`;
+                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-medium tracking-wide">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-medium tracking-wide mt-1">待訂正：${correction.join(', ')} 號</div>`;
                     reportHtml += `</div>`;
                     tReport.innerHTML += reportHtml;
 
                     // 全螢幕大字體
-                    let fsHtml = `<div class="mb-8 border-l-[12px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-3xl shadow-sm">
-                                    <div class="text-stone-900 font-black mb-6 text-4xl md:text-5xl">【${t}】</div>`;
-                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-black text-4xl md:text-5xl tracking-[0.2em] leading-relaxed mt-4">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-black text-4xl md:text-5xl tracking-[0.2em] leading-relaxed mt-6">待訂正：${correction.join(', ')} 號</div>`;
+                    let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl shadow-sm">
+                                    <div class="text-stone-800 font-bold mb-4 text-3xl md:text-4xl">【${t}】</div>`;
+                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-bold text-3xl md:text-4xl tracking-[0.1em] leading-relaxed mt-4">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-bold text-3xl md:text-4xl tracking-[0.1em] leading-relaxed mt-4">待訂正：${correction.join(', ')} 號</div>`;
                     fsHtml += `</div>`;
                     fsReport.innerHTML += fsHtml;
                 }
             });
 
             if (!hasUnfinished) {
-                fsReport.innerHTML = `<div class="text-[#788e83] font-black text-5xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
+                fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
             }
 
             // 出勤
             let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border-2 border-white px-4 py-1.5 rounded-xl font-black text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
-            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-black">該日無人請假</span>';
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-medium">該日無人請假</span>';
         }
 
         function addTask() {
@@ -483,7 +476,6 @@
             const count = parseInt(document.getElementById('studentCount').value);
             const wb = XLSX.utils.book_new();
 
-            // Sheet 1: 作業總表
             let taskRows = [];
             for (let i = 1; i <= count; i++) {
                 let row = { '座號': i };
@@ -492,7 +484,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
 
-            // Sheet 2: 出缺勤總表
             let attRows = [];
             const allDates = Object.keys(historyAtt).sort();
             for (let i = 1; i <= count; i++) {
@@ -509,7 +500,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤學期總表");
 
-            // Sheet 3: 輔導紀錄
             let noteRows = [];
             Object.keys(dailyNotes).sort().forEach(d => {
                 if (dailyNotes[d] && dailyNotes[d].trim() !== '') {
