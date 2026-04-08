@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v19 - 清晰優雅版</title>
+    <title>班級管理系統 v20 - 雲端同步版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style id="dynamicStyles">
         :root { --base-font-size: 16px; }
-        
         body { 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
             font-size: var(--base-font-size);
-            /* 優先使用英數字體，再 fallback 到思源黑體 */
-            font-family: 'Nunito', 'Noto Sans TC', "Microsoft JhengHei", sans-serif; 
+            font-family: 'Nunito', 'Noto Sans TC', sans-serif; 
             -webkit-font-smoothing: antialiased;
             background-color: #f0ebe1;
             background-image: 
@@ -22,21 +26,11 @@
                 radial-gradient(at 100% 100%, hsla(200, 30%, 85%, 1) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, hsla(350, 30%, 88%, 1) 0px, transparent 50%);
             background-attachment: fixed;
-            letter-spacing: 0.03em; /* 微微拉開字距，讓細字體更好閱讀 */
+            letter-spacing: 0.03em;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-        }
-        .glass-header {
-            background: rgba(74, 74, 72, 0.85);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
+        .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+        .glass-header { background: rgba(74, 74, 72, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
 
         ::-webkit-scrollbar { width: 10px; height: 10px; } 
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); border-radius: 10px; }
@@ -47,15 +41,10 @@
         .scroll-section { flex: 1; overflow: auto; background: transparent; }
         
         .state-btn {
-            width: 100%; min-width: 60px; height: 55px;
-            border-radius: 16px; 
-            font-weight: 700; font-size: 1.1em; /* 從 900 降為 700 */
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: 2px solid rgba(255,255,255,0.6);
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-            backdrop-filter: blur(4px);
+            width: 100%; min-width: 60px; height: 55px; border-radius: 16px; 
+            font-weight: 700; font-size: 1.1em; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(4px);
         }
-        
         .state-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); filter: brightness(1.03); }
         .state-btn:active { transform: scale(0.92) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
 
@@ -70,14 +59,10 @@
         .att-4 { background-color: rgba(189, 195, 199, 0.9); color: #434a52; }
         .att-5 { background-color: rgba(203, 187, 224, 0.9); color: #4a3666; }
 
-        .btn-idx { 
-            position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 600; 
-            background: rgba(0,0,0,0.05); color: inherit; padding: 3px 8px; border-radius: 14px 0 14px 0; z-index: 10;
-        }
+        .btn-idx { position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 600; background: rgba(0,0,0,0.05); padding: 3px 8px; border-radius: 14px 0 14px 0; z-index: 10; }
         .btn-text { font-size: 1.1em; font-weight: 700; line-height: 1.2; z-index: 5; margin-top: 6px; }
 
         table { border-collapse: separate; border-spacing: 0; }
-        
         th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 700; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
         th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; }
         .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.85); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
@@ -93,16 +78,34 @@
 </head>
 <body class="p-0 sm:p-3 relative">
 
-    <div class="main-container glass-panel sm:rounded-[2rem] shadow-2xl">
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#f0ebe1]/80 backdrop-blur-xl flex flex-col items-center justify-center transition-all duration-500">
+        <div class="glass-panel p-10 rounded-[2rem] w-11/12 max-w-md text-center shadow-2xl border-2 border-white">
+            <div class="text-6xl mb-6">☁️</div>
+            <h1 class="text-3xl font-bold text-stone-800 mb-2">Class Admin</h1>
+            <p class="text-stone-500 font-medium mb-8">請登入以存取您的專屬雲端班級資料庫</p>
+            <button onclick="loginWithGoogle()" class="w-full bg-white text-stone-700 px-6 py-4 rounded-2xl font-bold text-lg shadow-md hover:bg-stone-50 transition border border-stone-200 flex items-center justify-center gap-3">
+                <svg class="w-6 h-6" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                使用 Google 登入
+            </button>
+        </div>
+    </div>
+
+    <div id="mainApp" class="main-container glass-panel sm:rounded-[2rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500">
         
         <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2rem]">
-            <h1 class="font-bold text-2xl tracking-wide">Class Admin <span class="text-stone-400 font-medium text-lg ml-1">v19</span></h1>
-            <div class="flex items-center gap-6">
+            <h1 class="font-bold text-2xl tracking-wide flex items-center gap-3">
+                Class Admin <span class="text-stone-400 font-medium text-lg ml-1">v20 Cloud</span>
+                <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
+                </span>
+            </h1>
+            <div class="flex items-center gap-4">
                 <div class="flex items-center gap-3 bg-white/10 px-5 py-2 rounded-full hidden sm:flex">
                     <span class="text-sm font-medium text-stone-200">文字縮放</span>
                     <input type="range" min="14" max="34" value="16" oninput="updateFontSize(this.value)" class="opacity-80">
                 </div>
-                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-6 py-2 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">匯出總表</button>
+                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-4 py-2 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">匯出總表</button>
+                <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-4 py-2 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">登出</button>
             </div>
         </div>
 
@@ -110,30 +113,24 @@
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
                     <label class="text-sm font-bold text-stone-600">全班人數:</label>
-                    <input type="number" id="studentCount" value="5" class="w-14 bg-transparent font-bold text-center outline-none text-stone-700 text-base" onchange="saveAndRender()">
+                    <input type="number" id="studentCount" value="5" class="w-14 bg-transparent font-bold text-center outline-none text-stone-700 text-base" onchange="saveToCloud()">
                 </div>
                 <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
                     <span class="text-base">📅</span>
                     <input type="date" id="currentDate" class="bg-transparent border-none font-bold text-stone-700 outline-none text-sm" onchange="renderAll()">
                 </div>
-                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#c99070] shadow-sm flex items-center gap-2 transition border border-white/40">
-                    📣 宣導事項
-                </button>
-                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#7b8794] shadow-sm flex items-center gap-2 transition border border-white/40">
-                    📝 隱私記事
-                </button>
+                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#c99070] shadow-sm flex items-center gap-2 transition border border-white/40">📣 宣導事項</button>
+                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-[#7b8794] shadow-sm flex items-center gap-2 transition border border-white/40">📝 隱私記事</button>
             </div>
             <div id="taskInputGroup" class="flex gap-2">
-                <input type="text" id="taskName" placeholder="新增一項作業..." class="w-48 p-2 border border-white/80 rounded-xl font-medium outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
+                <input type="text" id="taskName" placeholder="新增作業..." class="w-40 p-2 border border-white/80 rounded-xl font-medium outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
                 <button onclick="addTask()" class="bg-[#6b6356] text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
             </div>
         </div>
 
-        <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-8 py-5">
-            <h2 class="text-lg font-bold text-[#8a4523] flex items-center gap-2 mb-2">
-                <span class="text-xl">📣</span> <span>現在應完成之事項</span>
-            </h2>
-            <ul id="announceList" class="list-disc list-inside text-stone-800 font-bold text-xl space-y-2 ml-2 leading-relaxed"></ul>
+        <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-8 py-4">
+            <h2 class="text-lg font-bold text-[#8a4523] flex items-center gap-2 mb-2"><span class="text-xl">📣</span>現在應完成之事項</h2>
+            <ul id="announceList" class="list-disc list-inside text-stone-800 font-bold text-xl space-y-1 ml-2"></ul>
         </div>
 
         <div class="flex shrink-0 px-2 pt-2 gap-1 bg-white/10">
@@ -142,17 +139,10 @@
         </div>
 
         <div id="taskView" class="scroll-section">
-            <table class="w-full">
-                <thead id="taskHeader"></thead>
-                <tbody id="taskBody"></tbody>
-            </table>
+            <table class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table>
         </div>
-
         <div id="attView" class="scroll-section hidden">
-            <table class="w-full">
-                <thead id="attHeader"></thead>
-                <tbody id="attendanceBody"></tbody>
-            </table>
+            <table class="w-full"><thead id="attHeader"></thead><tbody id="attendanceBody"></tbody></table>
         </div>
 
         <div class="report-section glass-panel sm:rounded-b-[2rem] border-t-0">
@@ -160,9 +150,7 @@
                 <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm">
                     <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-2 -ml-2 -mt-2 rounded-xl transition group">
                         <span class="text-lg font-bold">📌 未完成作業彙整</span>
-                        <span class="text-sm bg-stone-500/10 text-stone-700 px-4 py-1.5 rounded-lg opacity-80 group-hover:opacity-100 flex items-center gap-2 shadow-sm border border-white/60 font-medium">
-                            <span class="text-base">⤢</span> 全螢幕投影
-                        </span>
+                        <span class="text-sm bg-stone-500/10 text-stone-700 px-4 py-1.5 rounded-lg opacity-80 group-hover:opacity-100 flex items-center gap-2 shadow-sm border border-white/60 font-medium">⤢ 全螢幕投影</span>
                     </button>
                     <div id="taskReport" class="text-base font-medium flex-1 overflow-y-auto mt-2 text-stone-700"></div>
                 </div>
@@ -176,38 +164,30 @@
 
     <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col">
         <div class="p-6 bg-[#4a4a48]/90 backdrop-blur-md text-white flex justify-between items-center shadow-lg shrink-0 border-b border-white/20">
-            <h1 class="text-3xl md:text-4xl font-bold tracking-widest flex items-center gap-4 text-stone-100">今日任務總覽</h1>
-            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-6 py-2 rounded-xl text-xl font-bold shadow-md transition transform hover:scale-105 flex items-center gap-2 border border-white/50">退出投影</button>
+            <h1 class="text-3xl md:text-4xl font-bold tracking-widest text-stone-100">今日任務總覽</h1>
+            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-6 py-2 rounded-xl text-xl font-bold shadow-md transition">退出投影</button>
         </div>
-        
         <div id="fullScreenContent" class="p-8 md:p-16 flex-1 overflow-y-auto flex flex-col gap-10">
             <div id="fsAnnounceCard" class="hidden bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl">
-                <h2 class="text-3xl font-bold text-[#8a4523] mb-6 flex items-center gap-4">
-                    <span class="text-4xl">📣</span> 宣導與注意事項
-                </h2>
-                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-bold text-4xl md:text-5xl space-y-6 leading-relaxed ml-4"></ul>
+                <h2 class="text-3xl font-bold text-[#8a4523] mb-6">📣 宣導與注意事項</h2>
+                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-bold text-4xl space-y-6"></ul>
             </div>
-
             <div id="fsTaskCard" class="bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl flex-1">
-                <h2 class="text-3xl font-bold text-stone-600 mb-6 flex items-center gap-4">
-                    <span class="text-4xl">📌</span> 未完成作業進度
-                </h2>
+                <h2 class="text-3xl font-bold text-stone-600 mb-6">📌 未完成作業進度</h2>
                 <div id="fsTaskReport" class="space-y-8"></div>
             </div>
         </div>
     </div>
 
-    <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md transition-all">
+    <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-[#8a4523] flex items-center gap-3">📣 編輯宣導事項</h2>
-                <button onclick="closeAnnounceModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl transition">✕</button>
+                <h2 class="text-2xl font-bold text-[#8a4523]">📣 編輯宣導事項</h2>
+                <button onclick="closeAnnounceModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
             </div>
-            <textarea id="announceTextarea" class="w-full h-56 p-5 border border-white/80 rounded-xl outline-none focus:border-[#dfa888] resize-none text-lg font-medium text-stone-700 leading-relaxed shadow-inner bg-white/70"></textarea>
+            <textarea id="announceTextarea" class="w-full h-56 p-5 border border-white/80 rounded-xl outline-none focus:border-[#dfa888] resize-none text-lg font-medium text-stone-700 bg-white/70"></textarea>
             <div class="mt-6 flex justify-end">
-                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#c99070] transition border border-white/50">
-                    儲存並發布
-                </button>
+                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#c99070]">儲存並發布</button>
             </div>
         </div>
     </div>
@@ -215,30 +195,137 @@
     <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-3xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-stone-700 flex items-center gap-3">
-                    📝 班級記事本 (私密)
-                    <span id="noteDateDisplay" class="text-base bg-white/60 text-stone-700 px-3 py-1 rounded-lg font-bold border border-white/50 shadow-sm"></span>
-                </h2>
-                <button onclick="closeNoteModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl transition">✕</button>
+                <h2 class="text-2xl font-bold text-stone-700">📝 班級記事本 <span id="noteDateDisplay" class="ml-2 text-base bg-white/60 px-3 py-1 rounded-lg"></span></h2>
+                <button onclick="closeNoteModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
             </div>
-            <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-lg font-medium text-stone-700 leading-relaxed shadow-inner bg-white/80"></textarea>
+            <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-lg font-medium text-stone-700 bg-white/80"></textarea>
             <div class="mt-8 flex justify-end">
-                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#524c42] transition border border-white/30">
-                    🔒 儲存並隱藏
-                </button>
+                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#524c42]">🔒 儲存並隱藏</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // 1. Firebase 核心初始化與設定
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2jePwSyZH8xEux6mPc-LlYXoF7xJruIo",
+            authDomain: "typhomeworksystem.firebaseapp.com",
+            projectId: "typhomeworksystem",
+            storageBucket: "typhomeworksystem.firebasestorage.app",
+            messagingSenderId: "563125021119",
+            appId: "1:563125021119:web:169219a4e42e3936aa990a",
+            measurementId: "G-Z956M04W25"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        let currentUser = null;
+
+        // 全域資料變數
         let tasks = [];
         let globalTaskData = {};
         let historyAtt = {};
         let dailyNotes = {}; 
         let announcements = ""; 
-        
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
+
+        // ==========================================
+        // 2. 身份驗證與資料庫同步邏輯
+        // ==========================================
+        
+        // 監聽登入狀態
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
+                
+                const mainApp = document.getElementById('mainApp');
+                mainApp.classList.remove('opacity-0', 'pointer-events-none');
+                
+                // 啟動資料庫即時監聽 (Realtime Sync)
+                startDatabaseSync();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').style.display = 'flex';
+                setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
+                document.getElementById('mainApp').classList.add('opacity-0', 'pointer-events-none');
+            }
+        });
+
+        function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(error => alert("登入失敗: " + error.message));
+        }
+
+        function logout() { auth.signOut(); }
+
+        let isFirstLoad = true;
+        function startDatabaseSync() {
+            const userRef = db.ref('users/' + currentUser.uid);
+            
+            // 只要雲端有變動，就會瞬間觸發這個函數！
+            userRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    tasks = data.tasks || [];
+                    globalTaskData = data.globalTaskData || {};
+                    historyAtt = data.historyAtt || {};
+                    dailyNotes = data.dailyNotes || {};
+                    announcements = data.announcements || "";
+                    if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
+                    renderAll(); // 自動重新渲染畫面
+                } else if (isFirstLoad) {
+                    // 🌟 無痛搬家：如果雲端沒資料，嘗試把 LocalStorage 的舊資料丟上去
+                    console.log("雲端無資料，執行本機資料遷移...");
+                    migrateLocalDataToCloud();
+                }
+                isFirstLoad = false;
+                
+                // 讓「已同步」綠燈閃爍一下
+                const syncIcon = document.getElementById('syncStatus');
+                syncIcon.style.opacity = '0.5';
+                setTimeout(() => syncIcon.style.opacity = '1', 200);
+            });
+        }
+
+        function migrateLocalDataToCloud() {
+            const t = localStorage.getItem('v19_tasks') || localStorage.getItem('v18_tasks');
+            if (t) {
+                tasks = JSON.parse(t);
+                globalTaskData = JSON.parse(localStorage.getItem('v19_globalTaskData') || localStorage.getItem('v18_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v19_historyAtt') || localStorage.getItem('v18_historyAtt') || '{}');
+                dailyNotes = JSON.parse(localStorage.getItem('v19_dailyNotes') || localStorage.getItem('v18_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v19_announcements') || localStorage.getItem('v18_announcements') || '';
+                const count = localStorage.getItem('v19_count') || localStorage.getItem('v18_count');
+                if (count) document.getElementById('studentCount').value = count;
+                saveToCloud();
+            }
+        }
+
+        // 取代原本的 saveAndRender()，改為直接寫入雲端 (寫入後 Firebase 會自動觸發 on('value') 去 render)
+        function saveToCloud() {
+            if(!currentUser) return;
+            const data = {
+                tasks: tasks,
+                globalTaskData: globalTaskData,
+                historyAtt: historyAtt,
+                dailyNotes: dailyNotes,
+                announcements: announcements,
+                studentCount: document.getElementById('studentCount').value
+            };
+            db.ref('users/' + currentUser.uid).set(data);
+            renderAll(); // 為了手感流暢，本機也先自己 render 一次
+        }
+
+        // ==========================================
+        // 3. UI 互動與渲染邏輯 (維持完美排版)
+        // ==========================================
+
+        document.getElementById('currentDate').value = new Date().toISOString().split('T')[0];
 
         function updateFontSize(val) { document.documentElement.style.setProperty('--base-font-size', val + 'px'); }
 
@@ -251,73 +338,24 @@
             document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
         }
 
-        function toggleFullScreen() {
-            const overlay = document.getElementById('fullScreenOverlay');
-            overlay.classList.toggle('hidden'); overlay.classList.toggle('flex');
-        }
+        function toggleFullScreen() { document.getElementById('fullScreenOverlay').classList.toggle('hidden'); document.getElementById('fullScreenOverlay').classList.toggle('flex'); }
+        
+        function openAnnounceModal() { document.getElementById('announceTextarea').value = announcements; document.getElementById('announceModal').classList.replace('hidden', 'flex'); }
+        function closeAnnounceModal() { document.getElementById('announceModal').classList.replace('flex', 'hidden'); }
+        function saveAnnounce() { announcements = document.getElementById('announceTextarea').value.trim(); saveToCloud(); closeAnnounceModal(); }
 
-        function openAnnounceModal() {
-            document.getElementById('announceTextarea').value = announcements;
-            const modal = document.getElementById('announceModal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-        }
-        function closeAnnounceModal() {
-            const modal = document.getElementById('announceModal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-        }
-        function saveAnnounce() {
-            announcements = document.getElementById('announceTextarea').value.trim();
-            saveAndRender();
-            closeAnnounceModal();
-        }
-
-        function openNoteModal() {
+        function openNoteModal() { 
             const date = document.getElementById('currentDate').value;
             document.getElementById('noteDateDisplay').innerText = date;
             document.getElementById('dailyNoteText').value = dailyNotes[date] || '';
-            const modal = document.getElementById('noteModal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('noteModal').classList.replace('hidden', 'flex'); 
         }
-        function closeNoteModal() {
-            const modal = document.getElementById('noteModal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-        }
+        function closeNoteModal() { document.getElementById('noteModal').classList.replace('flex', 'hidden'); }
         function saveAndCloseNote() {
             const date = document.getElementById('currentDate').value;
             const text = document.getElementById('dailyNoteText').value.trim();
             if (text) dailyNotes[date] = text; else delete dailyNotes[date];
-            saveAndRender(); closeNoteModal();
-        }
-
-        function init() {
-            document.getElementById('currentDate').value = new Date().toISOString().split('T')[0];
-
-            // 確保無縫繼承舊版資料 (支援升級到 v19)
-            const t = localStorage.getItem('v19_tasks') || localStorage.getItem('v18_tasks') || localStorage.getItem('v17_tasks');
-            const gtd = localStorage.getItem('v19_globalTaskData') || localStorage.getItem('v18_globalTaskData') || localStorage.getItem('v17_globalTaskData');
-            const ha = localStorage.getItem('v19_historyAtt') || localStorage.getItem('v18_historyAtt') || localStorage.getItem('v17_historyAtt');
-            const c = localStorage.getItem('v19_count') || localStorage.getItem('v18_count') || localStorage.getItem('v17_count');
-            const dn = localStorage.getItem('v19_dailyNotes') || localStorage.getItem('v18_dailyNotes') || localStorage.getItem('v17_dailyNotes');
-            const ann = localStorage.getItem('v19_announcements') || localStorage.getItem('v18_announcements') || localStorage.getItem('v17_announcements');
-
-            if(t) tasks = JSON.parse(t);
-            if(gtd) globalTaskData = JSON.parse(gtd);
-            if(ha) historyAtt = JSON.parse(ha);
-            if(c) document.getElementById('studentCount').value = c;
-            if(dn) dailyNotes = JSON.parse(dn);
-            if(ann !== null) announcements = ann;
-
-            renderAll();
-        }
-
-        function saveAndRender() {
-            localStorage.setItem('v19_tasks', JSON.stringify(tasks));
-            localStorage.setItem('v19_globalTaskData', JSON.stringify(globalTaskData));
-            localStorage.setItem('v19_historyAtt', JSON.stringify(historyAtt));
-            localStorage.setItem('v19_count', document.getElementById('studentCount').value);
-            localStorage.setItem('v19_dailyNotes', JSON.stringify(dailyNotes));
-            localStorage.setItem('v19_announcements', announcements);
-            renderAll();
+            saveToCloud(); closeNoteModal();
         }
 
         function renderAll() {
@@ -326,149 +364,92 @@
             if (!historyAtt[date]) historyAtt[date] = {};
             const todaysAtt = historyAtt[date];
 
-            // 0. 宣導事項
-            const aBoard = document.getElementById('announceBoard');
-            const aList = document.getElementById('announceList');
-            const fsCard = document.getElementById('fsAnnounceCard');
-            const fsList = document.getElementById('fsAnnounceList');
-
+            // 宣導事項
+            const aBoard = document.getElementById('announceBoard'); const aList = document.getElementById('announceList');
+            const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
             if (announcements) {
                 const lis = announcements.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('');
-                aBoard.classList.remove('hidden');
-                aList.innerHTML = lis;
-                fsCard.classList.remove('hidden');
-                fsList.innerHTML = lis;
-            } else {
-                aBoard.classList.add('hidden');
-                fsCard.classList.add('hidden');
-            }
+                aBoard.classList.remove('hidden'); aList.innerHTML = lis; fsCard.classList.remove('hidden'); fsList.innerHTML = lis;
+            } else { aBoard.classList.add('hidden'); fsCard.classList.add('hidden'); }
 
-            // 1. 座號表頭
             let studentsHeader = '';
-            for(let i = 1; i <= count; i++) {
-                studentsHeader += `<th class="sticky-top min-w-[85px] text-lg font-bold">${i}號</th>`;
-            }
+            for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[85px] text-lg font-bold">${i}號</th>`;
 
-            // 2. 渲染作業表格
-            const tHeader = document.getElementById('taskHeader');
+            // 作業矩陣
             const tBody = document.getElementById('taskBody');
-            tHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
-            
+            document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             tBody.innerHTML = '';
             tasks.forEach((t, index) => {
                 let row = `<tr>
                     <td class="sticky-left p-4 border-b border-white/50">
                         <div class="font-bold text-stone-800 text-lg mb-3">${t}</div>
                         <div class="flex gap-2">
-                            <button onclick="completeAllTask('${t}')" class="text-sm font-bold bg-white/70 text-stone-700 px-3 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm transition">✔ 全完成</button>
-                            <button onclick="deleteTask(${index})" class="text-sm font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-3 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm transition">✕</button>
+                            <button onclick="completeAllTask('${t}')" class="text-sm font-bold bg-white/70 text-stone-700 px-3 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm">✔ 全完成</button>
+                            <button onclick="deleteTask(${index})" class="text-sm font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-3 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
                         </div>
                     </td>`;
                 for (let i = 1; i <= count; i++) {
                     const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
                     const lbls = ["未交", "待訂", "完成"];
-                    row += `<td class="p-2 border-b border-white/50">
-                        <button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}">
-                            <span class="btn-idx">${i}</span>
-                            <span class="btn-text">${lbls[s]}</span>
-                        </button>
-                    </td>`;
+                    row += `<td class="p-2 border-b border-white/50"><button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`;
                 }
                 tBody.innerHTML += row + '</tr>';
             });
 
-            // 3. 渲染出勤表格
-            const aHeader = document.getElementById('attHeader');
+            // 出勤矩陣
             const aBody = document.getElementById('attendanceBody');
-            aHeader.innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
-            
-            let attRow = `<tr>
-                <td class="sticky-left p-5 border-b border-white/50">
-                    <div class="font-bold text-stone-800 text-lg">今日狀態</div>
-                    <div class="text-sm text-stone-500 mt-1 font-medium">點擊切換假別</div>
-                </td>`;
+            document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
+            let attRow = `<tr><td class="sticky-left p-5 border-b border-white/50"><div class="font-bold text-stone-800 text-lg">今日狀態</div><div class="text-sm text-stone-500 mt-1 font-medium">點擊切換假別</div></td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
-                attRow += `<td class="p-2 border-b border-white/50">
-                    <button onclick="cycleAttendance(${i})" class="state-btn att-${s}">
-                        <span class="btn-idx">${i}</span>
-                        <span class="btn-text">${attLabels[s]}</span>
-                    </button>
-                </td>`;
+                attRow += `<td class="p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`;
             }
             aBody.innerHTML = attRow + '</tr>';
 
-            // 4. 總覽與全螢幕作業渲染
-            const tReport = document.getElementById('taskReport');
-            const fsReport = document.getElementById('fsTaskReport');
-            const aReport = document.getElementById('attReport');
+            // 報表
+            const tReport = document.getElementById('taskReport'); const fsReport = document.getElementById('fsTaskReport'); const aReport = document.getElementById('attReport');
             tReport.innerHTML = ''; fsReport.innerHTML = ''; aReport.innerHTML = '';
-
             let hasUnfinished = false;
+            
             tasks.forEach(t => {
                 let missing = []; let correction = []; 
                 for (let i = 1; i <= count; i++) {
                     const s = (globalTaskData[i] || {})[t] || 0;
-                    if (s === 0) missing.push(i);
-                    else if (s === 1) correction.push(i);
+                    if (s === 0) missing.push(i); else if (s === 1) correction.push(i);
                 }
-
                 if (missing.length === 0 && correction.length === 0) {
                     tReport.innerHTML += `<div class="text-[#63776d] font-bold italic mb-2">【${t}】 全員達標 ✓</div>`;
                 } else {
                     hasUnfinished = true;
-                    // 小畫面
-                    let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2.5 rounded-r-lg shadow-sm">
-                                        <div class="text-stone-800 font-bold mb-1 text-lg">【${t}】</div>`;
-                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-medium tracking-wide">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-medium tracking-wide mt-1">待訂正：${correction.join(', ')} 號</div>`;
-                    reportHtml += `</div>`;
-                    tReport.innerHTML += reportHtml;
+                    let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2.5 rounded-r-lg"><div class="text-stone-800 font-bold mb-1 text-lg">【${t}】</div>`;
+                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-medium">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-medium mt-1">待訂正：${correction.join(', ')} 號</div>`;
+                    tReport.innerHTML += reportHtml + `</div>`;
 
-                    // 全螢幕大字體
-                    let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl shadow-sm">
-                                    <div class="text-stone-800 font-bold mb-4 text-3xl md:text-4xl">【${t}】</div>`;
-                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-bold text-3xl md:text-4xl tracking-[0.1em] leading-relaxed mt-4">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-bold text-3xl md:text-4xl tracking-[0.1em] leading-relaxed mt-4">待訂正：${correction.join(', ')} 號</div>`;
-                    fsHtml += `</div>`;
-                    fsReport.innerHTML += fsHtml;
+                    let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl"><div class="text-stone-800 font-bold mb-4 text-3xl md:text-4xl">【${t}】</div>`;
+                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-bold text-3xl tracking-[0.1em] mt-4">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-bold text-3xl tracking-[0.1em] mt-4">待訂正：${correction.join(', ')} 號</div>`;
+                    fsReport.innerHTML += fsHtml + `</div>`;
                 }
             });
 
-            if (!hasUnfinished) {
-                fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
-            }
+            if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
 
-            // 出勤
             let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-medium">該日無人請假</span>';
         }
 
-        function addTask() {
-            const val = document.getElementById('taskName').value.trim();
-            if (!val || tasks.includes(val)) return;
-            tasks.push(val); document.getElementById('taskName').value = ''; saveAndRender();
-        }
-        function cycleTask(id, t) {
-            if(!globalTaskData[id]) globalTaskData[id]={};
-            globalTaskData[id][t] = ((globalTaskData[id][t]||0)+1)%3; saveAndRender();
-        }
-        function cycleAttendance(id) {
-            const d = document.getElementById('currentDate').value;
-            if(!historyAtt[d]) historyAtt[d] = {};
-            historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveAndRender();
-        }
-        function deleteTask(i) { if(confirm('確定移除作業欄位？')) { tasks.splice(i, 1); saveAndRender(); } }
-        
+        // --- 行為觸發 (全部改呼叫 saveToCloud) ---
+        function addTask() { const val = document.getElementById('taskName').value.trim(); if (!val || tasks.includes(val)) return; tasks.push(val); document.getElementById('taskName').value = ''; saveToCloud(); }
+        function cycleTask(id, t) { if(!globalTaskData[id]) globalTaskData[id]={}; globalTaskData[id][t] = ((globalTaskData[id][t]||0)+1)%3; saveToCloud(); }
+        function cycleAttendance(id) { const d = document.getElementById('currentDate').value; if(!historyAtt[d]) historyAtt[d] = {}; historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveToCloud(); }
+        function deleteTask(i) { if(confirm('確定移除作業欄位？')) { tasks.splice(i, 1); saveToCloud(); } }
         function completeAllTask(taskName) {
             if(confirm(`確定將【${taskName}】設為全班完成？`)) {
                 const count = parseInt(document.getElementById('studentCount').value) || 0;
-                for(let i = 1; i <= count; i++) {
-                    if(!globalTaskData[i]) globalTaskData[i] = {};
-                    globalTaskData[i][taskName] = 2;
-                }
-                saveAndRender();
+                for(let i = 1; i <= count; i++) { if(!globalTaskData[i]) globalTaskData[i] = {}; globalTaskData[i][taskName] = 2; }
+                saveToCloud();
             }
         }
 
@@ -502,20 +483,15 @@
 
             let noteRows = [];
             Object.keys(dailyNotes).sort().forEach(d => {
-                if (dailyNotes[d] && dailyNotes[d].trim() !== '') {
-                    noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] });
-                }
+                if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] });
             });
             if (noteRows.length > 0) {
                 const wsNotes = XLSX.utils.json_to_sheet(noteRows);
                 wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; 
                 XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本");
             }
-
             XLSX.writeFile(wb, `班級總表_${new Date().toLocaleDateString()}.xlsx`);
         }
-
-        init();
     </script>
 </body>
 </html>
