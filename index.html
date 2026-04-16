@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v24 - 圓潤可愛大字版</title>
+    <title>班級管理系統 v25 - 自由拖曳版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
@@ -18,7 +20,6 @@
         body { 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
             font-size: var(--base-font-size);
-            /* 優先使用 Nunito (英數字)，Fallback 到 Naguri (中文可愛圓體) */
             font-family: 'Nunito', 'Naguri', sans-serif; 
             -webkit-font-smoothing: antialiased;
             background-color: #f0ebe1;
@@ -27,7 +28,7 @@
                 radial-gradient(at 100% 100%, hsla(200, 30%, 85%, 1) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, hsla(350, 30%, 88%, 1) 0px, transparent 50%);
             background-attachment: fixed;
-            letter-spacing: 0.04em; /* 拉開字距增加可愛與清晰度 */
+            letter-spacing: 0.04em;
         }
 
         .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
@@ -41,7 +42,7 @@
         .scroll-section { flex: 1; overflow: auto; background: transparent; }
         
         .state-btn {
-            width: 100%; min-width: 60px; height: 55px; border-radius: 18px; /* 圓角加大 */
+            width: 100%; min-width: 60px; height: 55px; border-radius: 18px; 
             font-weight: 900; font-size: 1.15em; display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(4px);
         }
@@ -87,22 +88,21 @@
             .tab-btn { padding: 6px 0; font-size: 1rem; }
         }
 
-        /* 🌟 考試時鐘：自適應防溢出 + 可愛胖字體 🌟 */
-        /* 使用 Nunito 的 Black (900) 重量，看起來更胖更可愛 */
         .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: -0.01em; } 
         .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        
-        /* 🌟 優化：將 min 函數中的百分比加大，讓字體更貼近邊緣 🌟 */
         @media (min-width: 768px) {
-            /* 桌面版：並排時字體上限 9vw，全螢幕時上限 13vw */
             .clock-split { font-size: min(9vw, 35vh); line-height: 1; }
             .clock-full { font-size: min(13vw, 45vh); line-height: 1; }
         }
         @media (max-width: 767px) {
-            /* 手機版：加大上限 */
             .clock-split { font-size: min(13vw, 22vh); line-height: 1; }
             .clock-full { font-size: min(14vw, 35vh); line-height: 1; }
         }
+
+        /* 🌟 拖曳時的視覺反饋 🌟 */
+        .sortable-ghost { opacity: 0.4; background-color: rgba(223, 168, 136, 0.3); }
+        .drag-handle { cursor: grab; transition: 0.2s; }
+        .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -122,7 +122,7 @@
         
         <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
             <h1 class="font-black text-2xl md:text-3xl tracking-wide flex items-center gap-3">
-                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v24</span>
+                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v25</span>
                 <span id="liveClock" class="bg-black/30 px-3 py-1.5 rounded-xl font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
                 <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
                     <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
@@ -285,21 +285,17 @@
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
-        // 時鐘與版面
         function getLocalDateString() {
             const now = new Date();
-            const tzOffset = now.getTimezoneOffset() * 60000;
-            return new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+            return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         }
         document.getElementById('currentDate').value = getLocalDateString();
 
         setInterval(() => {
             const timeStr = new Date().toLocaleTimeString('zh-TW', {hour12: false});
             document.getElementById('liveClock').innerText = timeStr;
-            const fsClock = document.getElementById('fsClock');
-            if(fsClock) fsClock.innerText = timeStr;
-            const hugeClock = document.getElementById('hugeLiveClock');
-            if(hugeClock) hugeClock.innerText = timeStr;
+            if(document.getElementById('fsClock')) document.getElementById('fsClock').innerText = timeStr;
+            if(document.getElementById('hugeLiveClock')) document.getElementById('hugeLiveClock').innerText = timeStr;
         }, 1000);
 
         let isReportOpen = true;
@@ -319,19 +315,13 @@
         }
         if (window.innerHeight < 500 && window.innerWidth > window.innerHeight) { toggleReport(); }
 
-        // 考試大鐘邏輯
         function toggleExamClock() {
             const overlay = document.getElementById('examClockOverlay');
             overlay.classList.toggle('hidden'); overlay.classList.toggle('flex');
-            if(!overlay.classList.contains('hidden')) {
-                document.getElementById('examScheduleInput').value = examScheduleStr;
-            }
+            if(!overlay.classList.contains('hidden')) document.getElementById('examScheduleInput').value = examScheduleStr;
         }
 
-        function saveExamSchedule() {
-            examScheduleStr = document.getElementById('examScheduleInput').value;
-            saveToCloud();
-        }
+        function saveExamSchedule() { examScheduleStr = document.getElementById('examScheduleInput').value; saveToCloud(); }
 
         function toggleExamZoom(mode) {
             const left = document.getElementById('examLeft');
@@ -346,16 +336,13 @@
                 right.classList.add('w-full', 'md:w-2/3', 'h-1/2', 'md:h-full');
                 hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none";
             } else if (mode === 'left') {
-                left.classList.add('w-full', 'h-full');
-                right.classList.add('hidden');
+                left.classList.add('w-full', 'h-full'); right.classList.add('hidden');
             } else if (mode === 'right') {
-                left.classList.add('hidden');
-                right.classList.add('w-full', 'h-full');
+                left.classList.add('hidden'); right.classList.add('w-full', 'h-full');
                 hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full leading-none";
             }
         }
 
-        // Firebase
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
@@ -386,9 +373,8 @@
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
                     renderAll(); 
                     if(document.getElementById('examScheduleInput')) document.getElementById('examScheduleInput').value = examScheduleStr;
-                } else if (isFirstLoad) {
-                    migrateLocalDataToCloud();
-                }
+                } else if (isFirstLoad) migrateLocalDataToCloud();
+                
                 isFirstLoad = false;
                 const syncIcon = document.getElementById('syncStatus');
                 syncIcon.style.opacity = '0.5'; setTimeout(() => syncIcon.style.opacity = '1', 200);
@@ -396,14 +382,12 @@
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v23_tasks') || localStorage.getItem('v22_tasks');
+            const t = localStorage.getItem('v24_tasks') || localStorage.getItem('v23_tasks');
             if (t) {
-                tasks = JSON.parse(t);
-                globalTaskData = JSON.parse(localStorage.getItem('v23_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v23_historyAtt') || '{}');
-                dailyNotes = JSON.parse(localStorage.getItem('v23_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v23_announcements') || '';
-                if(localStorage.getItem('v23_count')) document.getElementById('studentCount').value = localStorage.getItem('v23_count');
+                tasks = JSON.parse(t); globalTaskData = JSON.parse(localStorage.getItem('v24_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v24_historyAtt') || '{}'); dailyNotes = JSON.parse(localStorage.getItem('v24_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v24_announcements') || '';
+                if(localStorage.getItem('v24_count')) document.getElementById('studentCount').value = localStorage.getItem('v24_count');
                 saveToCloud();
             }
         }
@@ -414,8 +398,6 @@
             db.ref('users/' + currentUser.uid).set(data);
             renderAll(); 
         }
-
-        function updateFontSize(val) { document.documentElement.style.setProperty('--base-font-size', val + 'px'); }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -453,15 +435,40 @@
             saveToCloud(); closeNoteModal();
         }
 
+        // 🌟 初始化拖曳功能 (SortableJS) 🌟
+        function initSortable() {
+            new Sortable(document.getElementById('taskBody'), {
+                animation: 200,
+                handle: '.drag-handle', // 只有抓著把手才能拖曳
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const movedItem = tasks.splice(evt.oldIndex, 1)[0];
+                    tasks.splice(evt.newIndex, 0, movedItem);
+                    saveToCloud(); // 拖曳放開後立即同步至雲端
+                }
+            });
+
+            new Sortable(document.getElementById('cleanBody'), {
+                animation: 200,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0];
+                    cleanTasks.splice(evt.newIndex, 0, movedItem);
+                    saveToCloud();
+                }
+            });
+        }
+
+        // 避免重複初始化
+        let isSortableInitialized = false;
+
         function renderAll() {
             const date = document.getElementById('currentDate').value;
             const count = parseInt(document.getElementById('studentCount').value) || 0;
             
-            if (!historyAtt[date]) historyAtt[date] = {};
-            const todaysAtt = historyAtt[date];
-            
-            if (!historyClean[date]) historyClean[date] = {};
-            const todaysClean = historyClean[date];
+            if (!historyAtt[date]) historyAtt[date] = {}; const todaysAtt = historyAtt[date];
+            if (!historyClean[date]) historyClean[date] = {}; const todaysClean = historyClean[date];
 
             const aBoard = document.getElementById('announceBoard'); const aList = document.getElementById('announceList');
             const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
@@ -471,17 +478,20 @@
             } else { aBoard.classList.add('hidden'); fsCard.classList.add('hidden'); }
 
             let studentsHeader = '';
-            for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-bold">${i}號</th>`;
+            for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`;
 
-            // 作業
+            // 作業 (加入拖曳把手)
             const tBody = document.getElementById('taskBody');
             document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             tBody.innerHTML = '';
             tasks.forEach((t, index) => {
-                let row = `<tr>
+                let row = `<tr class="bg-white/10">
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="font-black text-stone-800 text-base md:text-lg mb-2">${t}</div>
-                        <div class="flex gap-2">
+                        <div class="flex items-start gap-2 mb-2">
+                            <span class="drag-handle text-stone-400 hover:text-[#dfa888] text-xl px-1">⋮⋮</span>
+                            <div class="font-black text-stone-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>
+                        </div>
+                        <div class="flex gap-2 pl-6">
                             <button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm">✔ 全完成</button>
                             <button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
                         </div>
@@ -494,15 +504,18 @@
                 tBody.innerHTML += row + '</tr>';
             });
 
-            // 檢核
+            // 檢核 (加入拖曳把手)
             const cBody = document.getElementById('cleanBody');
             document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`;
             cBody.innerHTML = '';
             cleanTasks.forEach((t, index) => {
-                let row = `<tr>
+                let row = `<tr class="bg-white/10">
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="font-black text-emerald-800 text-base md:text-lg mb-2">${t}</div>
-                        <div class="flex gap-2">
+                        <div class="flex items-start gap-2 mb-2">
+                            <span class="drag-handle text-stone-400 hover:text-emerald-500 text-xl px-1">⋮⋮</span>
+                            <div class="font-black text-emerald-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>
+                        </div>
+                        <div class="flex gap-2 pl-6">
                             <button onclick="completeAllClean('${t}')" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-emerald-200 border border-emerald-200 shadow-sm">✔ 全過關</button>
                             <button onclick="deleteCleanTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
                         </div>
@@ -518,7 +531,7 @@
             // 出勤
             const aBody = document.getElementById('attendanceBody');
             document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
-            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-bold text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-medium">點擊切換假別</div></td>`;
+            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
                 attRow += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`;
@@ -537,26 +550,32 @@
                     if (s === 0) missing.push(i); else if (s === 1) correction.push(i);
                 }
                 if (missing.length === 0 && correction.length === 0) {
-                    tReport.innerHTML += `<div class="text-[#63776d] font-bold italic mb-2">【${t}】 全員達標 ✓</div>`;
+                    tReport.innerHTML += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員達標 ✓</div>`;
                 } else {
                     hasUnfinished = true;
-                    let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2 rounded-r-lg"><div class="text-stone-800 font-bold mb-1 text-base">【${t}】</div>`;
-                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-medium">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-medium mt-1">待訂正：${correction.join(', ')} 號</div>`;
+                    let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2 rounded-r-lg"><div class="text-stone-800 font-black mb-1 text-base">【${t}】</div>`;
+                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-bold">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-bold mt-1">待訂正：${correction.join(', ')} 號</div>`;
                     tReport.innerHTML += reportHtml + `</div>`;
 
-                    let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl"><div class="text-stone-800 font-bold mb-4 text-3xl md:text-4xl">【${t}】</div>`;
-                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-bold text-3xl tracking-[0.1em] mt-4">未交：${missing.join(', ')} 號</div>`;
-                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-bold text-3xl tracking-[0.1em] mt-4">待訂正：${correction.join(', ')} 號</div>`;
+                    let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl"><div class="text-stone-800 font-black mb-4 text-3xl md:text-4xl">【${t}】</div>`;
+                    if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-black text-3xl tracking-[0.1em] mt-4">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-black text-3xl tracking-[0.1em] mt-4">待訂正：${correction.join(', ')} 號</div>`;
                     fsReport.innerHTML += fsHtml + `</div>`;
                 }
             });
 
-            if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
+            if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-black text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
 
             let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}号 (${attLabels[todaysAtt[i]]})</span>`);
-            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-medium">該日無人請假</span>';
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-black text-stone-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
+
+            // 確保拖曳功能被初始化
+            if(!isSortableInitialized) {
+                initSortable();
+                isSortableInitialized = true;
+            }
         }
 
         function addItem() { 
@@ -653,5 +672,4 @@
         }
     </script>
 </body>
-</html>
 </html>
