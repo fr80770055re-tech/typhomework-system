@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v23 - 護眼淺色大鐘版</title>
+    <title>班級管理系統 v24 - 圓潤可愛大字版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -11,14 +11,15 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style id="dynamicStyles">
         :root { --base-font-size: 16px; }
         body { 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
             font-size: var(--base-font-size);
-            font-family: 'Nunito', 'Noto Sans TC', sans-serif; 
+            /* 優先使用 Nunito (英數字)，Fallback 到 Naguri (中文可愛圓體) */
+            font-family: 'Nunito', 'Naguri', sans-serif; 
             -webkit-font-smoothing: antialiased;
             background-color: #f0ebe1;
             background-image: 
@@ -26,7 +27,7 @@
                 radial-gradient(at 100% 100%, hsla(200, 30%, 85%, 1) 0px, transparent 50%),
                 radial-gradient(at 50% 100%, hsla(350, 30%, 88%, 1) 0px, transparent 50%);
             background-attachment: fixed;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em; /* 拉開字距增加可愛與清晰度 */
         }
 
         .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
@@ -40,66 +41,67 @@
         .scroll-section { flex: 1; overflow: auto; background: transparent; }
         
         .state-btn {
-            width: 100%; min-width: 60px; height: 55px; border-radius: 16px; 
-            font-weight: 700; font-size: 1.1em; display: flex; align-items: center; justify-content: center;
+            width: 100%; min-width: 60px; height: 55px; border-radius: 18px; /* 圓角加大 */
+            font-weight: 900; font-size: 1.15em; display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(4px);
         }
-        .state-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); filter: brightness(1.03); }
-        .state-btn:active { transform: scale(0.92) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
+        .state-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); filter: brightness(1.03); }
+        .state-btn:active { transform: scale(0.9) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
 
         .task-0 { background-color: rgba(230, 232, 235, 0.7); color: #606873; } 
-        .task-1 { background-color: rgba(238, 191, 165, 0.9); color: #8a4523; } 
-        .task-2 { background-color: rgba(163, 193, 218, 0.9); color: #2c4a6b; } 
+        .task-1 { background-color: rgba(238, 191, 165, 0.95); color: #8a4523; } 
+        .task-2 { background-color: rgba(163, 193, 218, 0.95); color: #2c4a6b; } 
 
-        .att-0 { background-color: rgba(168, 213, 186, 0.9); color: #2b593f; }
-        .att-1 { background-color: rgba(235, 215, 158, 0.9); color: #7a6320; }
-        .att-2 { background-color: rgba(227, 168, 168, 0.9); color: #6e2727; }
-        .att-3 { background-color: rgba(164, 201, 235, 0.9); color: #264e73; }
-        .att-4 { background-color: rgba(189, 195, 199, 0.9); color: #434a52; }
-        .att-5 { background-color: rgba(203, 187, 224, 0.9); color: #4a3666; }
+        .att-0 { background-color: rgba(168, 213, 186, 0.95); color: #2b593f; }
+        .att-1 { background-color: rgba(235, 215, 158, 0.95); color: #7a6320; }
+        .att-2 { background-color: rgba(227, 168, 168, 0.95); color: #6e2727; }
+        .att-3 { background-color: rgba(164, 201, 235, 0.95); color: #264e73; }
+        .att-4 { background-color: rgba(189, 195, 199, 0.95); color: #434a52; }
+        .att-5 { background-color: rgba(203, 187, 224, 0.95); color: #4a3666; }
 
         .clean-0 { background-color: rgba(220, 224, 229, 0.7); color: #606873; border-color: rgba(200,200,200,0.6); }
-        .clean-1 { background-color: rgba(52, 211, 153, 0.9); color: #ffffff; border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 4px 0 rgba(5, 150, 105, 0.8); }
+        .clean-1 { background-color: rgba(52, 211, 153, 0.95); color: #ffffff; border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 4px 0 rgba(5, 150, 105, 0.8); }
 
-        .btn-idx { position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 600; background: rgba(0,0,0,0.05); padding: 3px 8px; border-radius: 14px 0 14px 0; z-index: 10; }
-        .btn-text { font-size: 1.1em; font-weight: 700; line-height: 1.2; z-index: 5; margin-top: 6px; }
+        .btn-idx { position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 700; background: rgba(0,0,0,0.06); padding: 3px 9px; border-radius: 16px 0 16px 0; z-index: 10; }
+        .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 6px; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
 
         table { border-collapse: separate; border-spacing: 0; }
-        th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 700; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
+        th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
         th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; }
         .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.85); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
         th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
 
-        .tab-btn { flex: 1; padding: 12px 0; font-weight: 700; font-size: 1.05em; transition: 0.2s; border-radius: 16px 16px 0 0; }
-        .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 4px solid #9aa5b1; }
+        .tab-btn { flex: 1; padding: 14px 0; font-weight: 900; font-size: 1.1em; transition: 0.2s; border-radius: 18px 18px 0 0; }
+        .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 5px solid #9aa5b1; }
         .tab-inactive { background-color: rgba(255,255,255,0.2); color: #a39b8e; }
 
         .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 0 15px 15px 15px; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         .report-open { height: 35%; min-height: 250px; }
         .report-closed { height: 30px; overflow: hidden; padding-bottom: 0; }
-        .report-title { font-size: 1.2em; font-weight: 700; color: #6b6356; margin-bottom: 8px; }
+        .report-title { font-size: 1.25em; font-weight: 900; color: #6b6356; margin-bottom: 8px; }
 
         @media (max-height: 500px) and (orientation: landscape) {
             .glass-header { padding-top: 4px; padding-bottom: 4px; }
             .control-bar { padding: 4px 8px; }
             .state-btn { height: 45px; font-size: 1rem; }
-            .tab-btn { padding: 6px 0; font-size: 0.9rem; }
+            .tab-btn { padding: 6px 0; font-size: 1rem; }
         }
 
-        /* 🌟 考試時鐘：自適應防溢出設定 🌟 */
-        .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: 0.02em; }
+        /* 🌟 考試時鐘：自適應防溢出 + 可愛胖字體 🌟 */
+        /* 使用 Nunito 的 Black (900) 重量，看起來更胖更可愛 */
+        .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: -0.01em; } 
         .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* 利用 CSS min() 函數，確保字體大小不會超過寬度也不會超過高度 */
+        /* 🌟 優化：將 min 函數中的百分比加大，讓字體更貼近邊緣 🌟 */
         @media (min-width: 768px) {
-            /* 桌面版：並排時字體上限 7.5vw，全螢幕時上限 11vw */
-            .clock-split { font-size: min(7.5vw, 30vh); line-height: 1; }
-            .clock-full { font-size: min(11vw, 40vh); line-height: 1; }
+            /* 桌面版：並排時字體上限 9vw，全螢幕時上限 13vw */
+            .clock-split { font-size: min(9vw, 35vh); line-height: 1; }
+            .clock-full { font-size: min(13vw, 45vh); line-height: 1; }
         }
         @media (max-width: 767px) {
-            /* 手機版：垂直堆疊時的字體上限 */
-            .clock-split { font-size: min(12vw, 20vh); line-height: 1; }
-            .clock-full { font-size: min(13vw, 30vh); line-height: 1; }
+            /* 手機版：加大上限 */
+            .clock-split { font-size: min(13vw, 22vh); line-height: 1; }
+            .clock-full { font-size: min(14vw, 35vh); line-height: 1; }
         }
     </style>
 </head>
@@ -108,57 +110,57 @@
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#f0ebe1]/80 backdrop-blur-xl flex flex-col items-center justify-center transition-all duration-500">
         <div class="glass-panel p-10 rounded-[2rem] w-11/12 max-w-md text-center shadow-2xl border-2 border-white">
             <div class="text-6xl mb-6">☁️</div>
-            <h1 class="text-3xl font-bold text-stone-800 mb-2">Class Admin</h1>
+            <h1 class="text-3xl font-black text-stone-800 mb-2">Class Admin</h1>
             <p class="text-stone-500 font-medium mb-8">請登入以存取您的專屬雲端資料庫</p>
-            <button onclick="loginWithGoogle()" class="w-full bg-white text-stone-700 px-6 py-4 rounded-2xl font-bold text-lg shadow-md hover:bg-stone-50 transition border border-stone-200">
+            <button onclick="loginWithGoogle()" class="w-full bg-white text-stone-700 px-6 py-4 rounded-2xl font-black text-lg shadow-md hover:bg-stone-50 transition border border-stone-200">
                 使用 Google 安全登入
             </button>
         </div>
     </div>
 
-    <div id="mainApp" class="main-container glass-panel sm:rounded-[2rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500">
+    <div id="mainApp" class="main-container glass-panel sm:rounded-[2.5rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500">
         
-        <div class="px-6 py-3 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2rem]">
-            <h1 class="font-bold text-xl md:text-2xl tracking-wide flex items-center gap-3">
-                Class Admin <span class="text-stone-400 font-medium text-base ml-1 hidden md:inline">v23</span>
-                <span id="liveClock" class="bg-black/30 px-3 py-1 rounded-lg font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
+        <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
+            <h1 class="font-black text-2xl md:text-3xl tracking-wide flex items-center gap-3">
+                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v24</span>
+                <span id="liveClock" class="bg-black/30 px-3 py-1.5 rounded-xl font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
                 <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
                     <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
                 </span>
             </h1>
             <div class="flex items-center gap-3">
-                <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-4 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
-                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-4 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
-                <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-3 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">登出</button>
+                <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-5 py-2 rounded-xl font-black text-base shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
+                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-4 py-2 rounded-xl font-black text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
+                <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-3 py-2 rounded-xl font-black text-sm shadow-md transition text-white border border-white/20">登出</button>
             </div>
         </div>
 
-        <div class="control-bar p-3 md:p-4 flex flex-wrap items-center justify-between gap-3 bg-white/30 shrink-0 border-b border-white/50">
+        <div class="control-bar p-4 md:p-5 flex flex-wrap items-center justify-between gap-3 bg-white/30 shrink-0 border-b border-white/50">
             <div class="flex flex-wrap items-center gap-2 md:gap-3">
-                <div class="flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-xl shadow-sm border border-white/60">
-                    <label class="text-sm font-bold text-stone-600 hidden sm:block">人數:</label>
-                    <input type="number" id="studentCount" value="5" class="w-12 bg-transparent font-bold text-center outline-none text-stone-700 text-sm" onchange="saveToCloud()">
+                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
+                    <label class="text-base font-black text-stone-600 hidden sm:block">人數:</label>
+                    <input type="number" id="studentCount" value="5" class="w-14 bg-transparent font-black text-center outline-none text-stone-700 text-base" onchange="saveToCloud()">
                 </div>
-                <div class="flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-xl shadow-sm border border-white/60">
-                    <span class="text-sm">📅</span>
-                    <input type="date" id="currentDate" class="bg-transparent border-none font-bold text-stone-700 outline-none text-sm" onchange="renderAll()">
+                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
+                    <span class="text-base">📅</span>
+                    <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-sm" onchange="renderAll()">
                 </div>
-                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-[#c99070] shadow-sm transition">📣 宣導</button>
-                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
+                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-4 py-2 rounded-xl font-black text-base hover:bg-[#c99070] shadow-sm transition">📣 宣導</button>
+                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-4 py-2 rounded-xl font-black text-base hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
             </div>
             
             <div id="taskInputGroup" class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 transition-all">
-                <input type="text" id="itemName" placeholder="新增名稱..." class="flex-1 sm:w-40 p-1.5 px-3 border border-white/80 rounded-xl font-medium outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
-                <button onclick="addItem()" class="bg-[#6b6356] text-white px-4 py-1.5 rounded-xl font-bold text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
+                <input type="text" id="itemName" placeholder="新增名稱..." class="flex-1 sm:w-48 p-2 px-4 border border-white/80 rounded-xl font-black outline-none focus:border-stone-400 bg-white/60 shadow-sm text-base">
+                <button onclick="addItem()" class="bg-[#6b6356] text-white px-5 py-2 rounded-xl font-black text-base hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
             </div>
         </div>
 
-        <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-6 py-3">
-            <h2 class="text-base font-bold text-[#8a4523] flex items-center gap-2 mb-1"><span class="text-lg">📣</span>現在應完成事項</h2>
-            <ul id="announceList" class="list-disc list-inside text-stone-800 font-bold text-lg space-y-1 ml-2"></ul>
+        <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-8 py-4">
+            <h2 class="text-lg font-black text-[#8a4523] flex items-center gap-2 mb-2"><span class="text-xl">📣</span>現在應完成事項</h2>
+            <ul id="announceList" class="list-disc list-inside text-stone-800 font-black text-xl space-y-1 ml-2 leading-relaxed"></ul>
         </div>
 
-        <div class="flex shrink-0 px-2 pt-2 gap-1 bg-white/10">
+        <div class="flex shrink-0 px-3 pt-3 gap-1 bg-white/10">
             <button id="btnTaskTab" onclick="switchTab('task')" class="tab-btn tab-active">📋 作業進度</button>
             <button id="btnCleanTab" onclick="switchTab('clean')" class="tab-btn tab-inactive border-l border-white/30">🧹 潔牙掃地檢核</button>
             <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive border-l border-white/30">📅 出缺勤</button>
@@ -168,95 +170,95 @@
         <div id="cleanView" class="scroll-section hidden"><table class="w-full"><thead id="cleanHeader"></thead><tbody id="cleanBody"></tbody></table></div>
         <div id="attView" class="scroll-section hidden"><table class="w-full"><thead id="attHeader"></thead><tbody id="attendanceBody"></tbody></table></div>
 
-        <div id="reportPanel" class="report-section glass-panel sm:rounded-b-[2rem] report-open">
+        <div id="reportPanel" class="report-section glass-panel sm:rounded-b-[2.5rem] report-open border-t-0">
             <div class="flex justify-center -mt-[2px] mb-2 shrink-0">
                 <button onclick="toggleReport()" class="bg-white/60 hover:bg-white/90 text-stone-500 px-6 py-1 rounded-b-xl shadow-sm text-xs font-bold transition flex items-center gap-2 border border-white/60 border-t-0 backdrop-blur-sm">
                     <span id="reportToggleIcon">▼</span> <span id="reportToggleText">收起總覽面板</span>
                 </button>
             </div>
             
-            <div id="reportGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden transition-opacity duration-300">
-                <div class="bg-white/60 p-4 rounded-2xl border border-white flex flex-col shadow-sm h-full">
+            <div id="reportGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5 h-full overflow-hidden transition-opacity duration-300">
+                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm h-full">
                     <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-2 -ml-2 -mt-2 rounded-xl transition group">
-                        <span class="text-base font-bold">📌 未完成作業彙整</span>
-                        <span class="text-xs bg-stone-500/10 text-stone-700 px-3 py-1 rounded-lg opacity-80 group-hover:opacity-100 flex items-center gap-1 shadow-sm border border-white/60">⤢ 全螢幕投影</span>
+                        <span class="text-xl font-black">📌 未完成作業彙整</span>
+                        <span class="text-sm bg-stone-500/10 text-stone-700 px-4 py-1.5 rounded-xl opacity-80 group-hover:opacity-100 flex items-center gap-1.5 shadow-sm border border-white/60 font-black">⤢ 全螢幕投影</span>
                     </button>
-                    <div id="taskReport" class="text-sm font-medium flex-1 overflow-y-auto mt-1 text-stone-700"></div>
+                    <div id="taskReport" class="text-base font-bold flex-1 overflow-y-auto mt-2 text-stone-700"></div>
                 </div>
-                <div class="bg-white/60 p-4 rounded-2xl border border-white flex flex-col shadow-sm h-full">
-                    <div class="report-title text-stone-600 text-base font-bold mb-1">📌 今日狀態異動</div>
-                    <div id="attReport" class="flex flex-wrap gap-2 text-sm mt-1 text-stone-700 flex-1 overflow-y-auto font-medium content-start"></div>
+                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm h-full">
+                    <div class="report-title text-stone-600 text-xl font-black mb-1">📌 今日狀態異動</div>
+                    <div id="attReport" class="flex flex-wrap gap-2 text-base mt-1 text-stone-700 flex-1 overflow-y-auto font-bold content-start"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500">
+    <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500 font-black">
         <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
-            <h1 class="text-2xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
+            <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
                 <span>⏱️</span> 考場電子看板
             </h1>
             <div class="flex gap-3 md:gap-4">
-                <button onclick="toggleExamZoom('split')" class="text-xs md:text-sm bg-[#9aa5b1] text-white hover:bg-[#7b8794] px-3 md:px-4 py-2 rounded-lg font-bold transition shadow-sm">並排顯示</button>
-                <button onclick="toggleExamClock()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-[#6e2727] px-4 md:px-6 py-2 rounded-lg text-sm md:text-lg font-black shadow-md transition border border-[#d69595]">退出看板</button>
+                <button onclick="toggleExamZoom('split')" class="text-sm md:text-base bg-[#9aa5b1] text-white hover:bg-[#7b8794] px-4 md:px-5 py-2.5 rounded-xl font-black transition shadow-sm">並排顯示</button>
+                <button onclick="toggleExamClock()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-[#6e2727] px-5 md:px-7 py-2.5 rounded-xl text-base md:text-lg font-black shadow-md transition border border-[#d69595]">退出看板</button>
             </div>
         </div>
         
         <div id="examContainer" class="flex flex-1 overflow-hidden flex-col md:flex-row bg-[#fdfcf9]">
-            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-6 flex flex-col relative">
-                <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-600 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">🔍 放大</button>
-                <h2 class="text-xl md:text-2xl font-black text-[#6b6356] mb-4 tracking-wide">📝 考科與時間設定</h2>
-                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-2xl md:text-4xl font-bold leading-relaxed resize-none outline-none placeholder-stone-400" placeholder="08:40 - 09:20 國語&#10;09:30 - 10:10 數學"></textarea>
+            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-8 flex flex-col relative">
+                <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
+                <h2 class="text-2xl md:text-3xl font-black text-[#6b6356] mb-5 tracking-wide">📝 考科與時間</h2>
+                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400" placeholder="08:40 - 09:20 國語&#10;09:30 - 10:10 數學"></textarea>
             </div>
             
-            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-6 flex items-center justify-center relative shadow-inner">
-                <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-600 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">🔍 放大</button>
-                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split">
+            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-8 flex items-center justify-center relative shadow-inner overflow-hidden">
+                <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
+                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none">
                     00:00:00
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col">
+    <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col font-black">
         <div class="p-6 bg-[#4a4a48]/90 backdrop-blur-md text-white flex justify-between items-center shadow-lg shrink-0 border-b border-white/20">
-            <h1 class="text-3xl md:text-4xl font-bold tracking-widest text-stone-100">今日任務總覽 <span id="fsClock" class="ml-4 text-2xl font-mono opacity-80"></span></h1>
-            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-6 py-2 rounded-xl text-xl font-bold shadow-md transition">退出投影</button>
+            <h1 class="text-3xl md:text-4xl font-black tracking-widest text-stone-100">今日任務總覽 <span id="fsClock" class="ml-4 text-2xl font-mono opacity-80"></span></h1>
+            <button onclick="toggleFullScreen()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-stone-900 px-6 py-2 rounded-xl text-xl font-black shadow-md transition">退出投影</button>
         </div>
         <div id="fullScreenContent" class="p-8 md:p-16 flex-1 overflow-y-auto flex flex-col gap-10">
             <div id="fsAnnounceCard" class="hidden bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl">
-                <h2 class="text-3xl font-bold text-[#8a4523] mb-6">📣 宣導與注意事項</h2>
-                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-bold text-4xl space-y-6"></ul>
+                <h2 class="text-3xl font-black text-[#8a4523] mb-6">📣 宣導與注意事項</h2>
+                <ul id="fsAnnounceList" class="list-disc list-inside text-stone-800 font-black text-4xl space-y-6"></ul>
             </div>
             <div id="fsTaskCard" class="bg-white/70 backdrop-blur-xl rounded-3xl p-10 border border-white shadow-xl flex-1">
-                <h2 class="text-3xl font-bold text-stone-600 mb-6">📌 未完成作業進度</h2>
+                <h2 class="text-3xl font-black text-stone-600 mb-6">📌 未完成作業進度</h2>
                 <div id="fsTaskReport" class="space-y-8"></div>
             </div>
         </div>
     </div>
 
-    <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md">
+    <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-[#8a4523]">📣 編輯宣導事項</h2>
+                <h2 class="text-2xl font-black text-[#8a4523]">📣 編輯宣導事項</h2>
                 <button onclick="closeAnnounceModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
             </div>
-            <textarea id="announceTextarea" class="w-full h-56 p-5 border border-white/80 rounded-xl outline-none focus:border-[#dfa888] resize-none text-lg font-medium text-stone-700 bg-white/70"></textarea>
+            <textarea id="announceTextarea" class="w-full h-56 p-5 border border-white/80 rounded-xl outline-none focus:border-[#dfa888] resize-none text-xl font-bold text-stone-700 bg-white/70"></textarea>
             <div class="mt-6 flex justify-end">
-                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#c99070]">儲存並發布</button>
+                <button onclick="saveAnnounce()" class="bg-[#dfa888] text-white px-8 py-2.5 rounded-xl font-black text-base shadow-md hover:bg-[#c99070]">儲存並發布</button>
             </div>
         </div>
     </div>
 
-    <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md">
+    <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-3xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-stone-700">📝 班級記事本 <span id="noteDateDisplay" class="ml-2 text-base bg-white/60 px-3 py-1 rounded-lg"></span></h2>
+                <h2 class="text-2xl font-black text-stone-700">📝 班級記事本 <span id="noteDateDisplay" class="ml-2 text-base bg-white/60 px-3 py-1 rounded-lg"></span></h2>
                 <button onclick="closeNoteModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
             </div>
-            <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-lg font-medium text-stone-700 bg-white/80"></textarea>
+            <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-xl font-bold text-stone-700 bg-white/80"></textarea>
             <div class="mt-8 flex justify-end">
-                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-bold text-base shadow-md hover:bg-[#524c42]">🔒 儲存並隱藏</button>
+                <button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-black text-base shadow-md hover:bg-[#524c42]">🔒 儲存並隱藏</button>
             </div>
         </div>
     </div>
@@ -275,7 +277,6 @@
         const db = firebase.database();
         let currentUser = null;
 
-        // 資料變數
         let tasks = []; let globalTaskData = {}; 
         let historyAtt = {}; let dailyNotes = {}; let announcements = ""; 
         let cleanTasks = ["潔牙", "掃地"]; let historyClean = {}; 
@@ -284,9 +285,7 @@
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
-        // ==========================================
-        // 🌟 時鐘與版面
-        // ==========================================
+        // 時鐘與版面
         function getLocalDateString() {
             const now = new Date();
             const tzOffset = now.getTimezoneOffset() * 60000;
@@ -299,7 +298,6 @@
             document.getElementById('liveClock').innerText = timeStr;
             const fsClock = document.getElementById('fsClock');
             if(fsClock) fsClock.innerText = timeStr;
-            
             const hugeClock = document.getElementById('hugeLiveClock');
             if(hugeClock) hugeClock.innerText = timeStr;
         }, 1000);
@@ -321,9 +319,7 @@
         }
         if (window.innerHeight < 500 && window.innerWidth > window.innerHeight) { toggleReport(); }
 
-        // ==========================================
-        // 🌟 考試大鐘邏輯 (淺色防溢出版) 🌟
-        // ==========================================
+        // 考試大鐘邏輯
         function toggleExamClock() {
             const overlay = document.getElementById('examClockOverlay');
             overlay.classList.toggle('hidden'); overlay.classList.toggle('flex');
@@ -342,27 +338,24 @@
             const right = document.getElementById('examRight');
             const hugeText = document.getElementById('hugeLiveClock');
 
-            // 恢復基礎淺色樣式
-            left.className = "clock-panel p-6 flex flex-col relative bg-[#fdfcf9] border-[#d3cabc]";
-            right.className = "clock-panel p-6 flex items-center justify-center relative bg-[#f4f1ea] shadow-inner";
+            left.className = "clock-panel p-8 flex flex-col relative bg-[#fdfcf9] border-[#d3cabc]";
+            right.className = "clock-panel p-8 flex items-center justify-center relative bg-[#f4f1ea] shadow-inner overflow-hidden";
             
             if (mode === 'split') {
                 left.classList.add('w-full', 'md:w-1/3', 'h-1/2', 'md:h-full', 'border-b', 'md:border-b-0', 'md:border-r');
                 right.classList.add('w-full', 'md:w-2/3', 'h-1/2', 'md:h-full');
-                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split";
+                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none";
             } else if (mode === 'left') {
                 left.classList.add('w-full', 'h-full');
                 right.classList.add('hidden');
             } else if (mode === 'right') {
                 left.classList.add('hidden');
                 right.classList.add('w-full', 'h-full');
-                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full";
+                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full leading-none";
             }
         }
 
-        // ==========================================
-        // Firebase 驗證與同步
-        // ==========================================
+        // Firebase
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
@@ -403,14 +396,14 @@
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v22_tasks') || localStorage.getItem('v21_tasks');
+            const t = localStorage.getItem('v23_tasks') || localStorage.getItem('v22_tasks');
             if (t) {
                 tasks = JSON.parse(t);
-                globalTaskData = JSON.parse(localStorage.getItem('v22_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v22_historyAtt') || '{}');
-                dailyNotes = JSON.parse(localStorage.getItem('v22_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v22_announcements') || '';
-                if(localStorage.getItem('v22_count')) document.getElementById('studentCount').value = localStorage.getItem('v22_count');
+                globalTaskData = JSON.parse(localStorage.getItem('v23_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v23_historyAtt') || '{}');
+                dailyNotes = JSON.parse(localStorage.getItem('v23_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v23_announcements') || '';
+                if(localStorage.getItem('v23_count')) document.getElementById('studentCount').value = localStorage.getItem('v23_count');
                 saveToCloud();
             }
         }
@@ -422,9 +415,6 @@
             renderAll(); 
         }
 
-        // ==========================================
-        // UI 渲染與切換
-        // ==========================================
         function updateFontSize(val) { document.documentElement.style.setProperty('--base-font-size', val + 'px'); }
 
         function switchTab(tab) {
@@ -473,7 +463,6 @@
             if (!historyClean[date]) historyClean[date] = {};
             const todaysClean = historyClean[date];
 
-            // 宣導事項
             const aBoard = document.getElementById('announceBoard'); const aList = document.getElementById('announceList');
             const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
             if (announcements) {
@@ -486,12 +475,12 @@
 
             // 作業
             const tBody = document.getElementById('taskBody');
-            document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
+            document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             tBody.innerHTML = '';
             tasks.forEach((t, index) => {
                 let row = `<tr>
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="font-bold text-stone-800 text-base md:text-lg mb-2">${t}</div>
+                        <div class="font-black text-stone-800 text-base md:text-lg mb-2">${t}</div>
                         <div class="flex gap-2">
                             <button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm">✔ 全完成</button>
                             <button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
@@ -507,12 +496,12 @@
 
             // 檢核
             const cBody = document.getElementById('cleanBody');
-            document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`;
+            document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`;
             cBody.innerHTML = '';
             cleanTasks.forEach((t, index) => {
                 let row = `<tr>
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="font-bold text-emerald-800 text-base md:text-lg mb-2">${t}</div>
+                        <div class="font-black text-emerald-800 text-base md:text-lg mb-2">${t}</div>
                         <div class="flex gap-2">
                             <button onclick="completeAllClean('${t}')" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-emerald-200 border border-emerald-200 shadow-sm">✔ 全過關</button>
                             <button onclick="deleteCleanTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
@@ -566,11 +555,10 @@
             if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
 
             let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}号 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-medium">該日無人請假</span>';
         }
 
-        // --- 行為觸發 ---
         function addItem() { 
             const val = document.getElementById('itemName').value.trim(); 
             if (!val) return;
@@ -665,4 +653,5 @@
         }
     </script>
 </body>
+</html>
 </html>
