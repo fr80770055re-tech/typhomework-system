@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v22 - 檢核大鐘版</title>
+    <title>班級管理系統 v23 - 護眼淺色大鐘版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -58,7 +58,6 @@
         .att-4 { background-color: rgba(189, 195, 199, 0.9); color: #434a52; }
         .att-5 { background-color: rgba(203, 187, 224, 0.9); color: #4a3666; }
 
-        /* 🧹 潔牙掃地狀態顏色 (0未完成 / 1已完成) */
         .clean-0 { background-color: rgba(220, 224, 229, 0.7); color: #606873; border-color: rgba(200,200,200,0.6); }
         .clean-1 { background-color: rgba(52, 211, 153, 0.9); color: #ffffff; border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 4px 0 rgba(5, 150, 105, 0.8); }
 
@@ -87,9 +86,21 @@
             .tab-btn { padding: 6px 0; font-size: 0.9rem; }
         }
 
-        /* ⏱️ 考試時鐘專屬字體與排版 */
-        .digital-clock-font { font-family: 'Courier New', Courier, monospace; font-weight: 900; letter-spacing: 0.05em; }
+        /* 🌟 考試時鐘：自適應防溢出設定 🌟 */
+        .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: 0.02em; }
         .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* 利用 CSS min() 函數，確保字體大小不會超過寬度也不會超過高度 */
+        @media (min-width: 768px) {
+            /* 桌面版：並排時字體上限 7.5vw，全螢幕時上限 11vw */
+            .clock-split { font-size: min(7.5vw, 30vh); line-height: 1; }
+            .clock-full { font-size: min(11vw, 40vh); line-height: 1; }
+        }
+        @media (max-width: 767px) {
+            /* 手機版：垂直堆疊時的字體上限 */
+            .clock-split { font-size: min(12vw, 20vh); line-height: 1; }
+            .clock-full { font-size: min(13vw, 30vh); line-height: 1; }
+        }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -109,14 +120,14 @@
         
         <div class="px-6 py-3 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2rem]">
             <h1 class="font-bold text-xl md:text-2xl tracking-wide flex items-center gap-3">
-                Class Admin <span class="text-stone-400 font-medium text-base ml-1 hidden md:inline">v22</span>
+                Class Admin <span class="text-stone-400 font-medium text-base ml-1 hidden md:inline">v23</span>
                 <span id="liveClock" class="bg-black/30 px-3 py-1 rounded-lg font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
                 <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
                     <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
                 </span>
             </h1>
             <div class="flex items-center gap-3">
-                <button onclick="toggleExamClock()" class="bg-amber-500/90 hover:bg-amber-600 px-4 py-1.5 rounded-xl font-black text-sm shadow-md transition text-white border border-amber-300">⏱️ 考試大鐘</button>
+                <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-4 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
                 <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-4 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
                 <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-3 py-1.5 rounded-xl font-bold text-sm shadow-md transition text-white border border-white/20">登出</button>
             </div>
@@ -180,27 +191,27 @@
         </div>
     </div>
 
-    <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#1c1c1e] text-white hidden flex-col transition-all duration-500">
-        <div class="p-4 bg-[#2c2c2e] flex justify-between items-center shadow-md border-b border-[#3a3a3c] shrink-0">
-            <h1 class="text-2xl font-black text-amber-400 tracking-widest flex items-center gap-3">
+    <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500">
+        <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
+            <h1 class="text-2xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
                 <span>⏱️</span> 考場電子看板
             </h1>
-            <div class="flex gap-4">
-                <button onclick="toggleExamZoom('split')" class="text-sm bg-stone-600 hover:bg-stone-500 px-4 py-2 rounded-lg font-bold transition shadow-sm">並排顯示</button>
-                <button onclick="toggleExamClock()" class="bg-red-500 hover:bg-red-600 px-6 py-2 rounded-lg text-lg font-black shadow-md transition border border-red-400">退出看板</button>
+            <div class="flex gap-3 md:gap-4">
+                <button onclick="toggleExamZoom('split')" class="text-xs md:text-sm bg-[#9aa5b1] text-white hover:bg-[#7b8794] px-3 md:px-4 py-2 rounded-lg font-bold transition shadow-sm">並排顯示</button>
+                <button onclick="toggleExamClock()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-[#6e2727] px-4 md:px-6 py-2 rounded-lg text-sm md:text-lg font-black shadow-md transition border border-[#d69595]">退出看板</button>
             </div>
         </div>
         
-        <div id="examContainer" class="flex flex-1 overflow-hidden flex-col md:flex-row">
-            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#3a3a3c] bg-[#1c1c1e] p-6 flex flex-col relative">
-                <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg text-xs font-bold transition">🔍 放大</button>
-                <h2 class="text-xl font-bold text-stone-400 mb-3 tracking-wide">📝 考科與時間設定</h2>
-                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-amber-100 text-3xl md:text-4xl font-bold leading-relaxed resize-none outline-none placeholder-stone-600" placeholder="08:40 - 09:20 國語&#10;09:30 - 10:10 數學"></textarea>
+        <div id="examContainer" class="flex flex-1 overflow-hidden flex-col md:flex-row bg-[#fdfcf9]">
+            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-6 flex flex-col relative">
+                <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-600 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">🔍 放大</button>
+                <h2 class="text-xl md:text-2xl font-black text-[#6b6356] mb-4 tracking-wide">📝 考科與時間設定</h2>
+                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-2xl md:text-4xl font-bold leading-relaxed resize-none outline-none placeholder-stone-400" placeholder="08:40 - 09:20 國語&#10;09:30 - 10:10 數學"></textarea>
             </div>
             
-            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-black p-6 flex items-center justify-center relative">
-                <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg text-xs font-bold transition">🔍 放大</button>
-                <div id="hugeLiveClock" class="digital-clock-font text-[20vw] md:text-[18vw] text-white tracking-tighter leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-6 flex items-center justify-center relative shadow-inner">
+                <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-600 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">🔍 放大</button>
+                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split">
                     00:00:00
                 </div>
             </div>
@@ -267,13 +278,8 @@
         // 資料變數
         let tasks = []; let globalTaskData = {}; 
         let historyAtt = {}; let dailyNotes = {}; let announcements = ""; 
-        
-        // 🌟 新增：潔牙掃地檢核資料 🌟
-        let cleanTasks = ["潔牙", "掃地"]; 
-        let historyClean = {}; // { date: { id: { "潔牙": 0/1 } } }
-        
-        // 🌟 新增：考試大鐘字串 🌟
-        let examScheduleStr = "08:40-09:20 國語\n09:30-10:10 數學";
+        let cleanTasks = ["潔牙", "掃地"]; let historyClean = {}; 
+        let examScheduleStr = "08:40 - 09:20 國語\n09:30 - 10:10 數學";
 
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
@@ -294,7 +300,6 @@
             const fsClock = document.getElementById('fsClock');
             if(fsClock) fsClock.innerText = timeStr;
             
-            // 更新巨大考試時鐘
             const hugeClock = document.getElementById('hugeLiveClock');
             if(hugeClock) hugeClock.innerText = timeStr;
         }, 1000);
@@ -317,7 +322,7 @@
         if (window.innerHeight < 500 && window.innerWidth > window.innerHeight) { toggleReport(); }
 
         // ==========================================
-        // 🌟 考試大鐘邏輯 🌟
+        // 🌟 考試大鐘邏輯 (淺色防溢出版) 🌟
         // ==========================================
         function toggleExamClock() {
             const overlay = document.getElementById('examClockOverlay');
@@ -332,27 +337,26 @@
             saveToCloud();
         }
 
-        // 1:2 縮放邏輯
         function toggleExamZoom(mode) {
             const left = document.getElementById('examLeft');
             const right = document.getElementById('examRight');
             const hugeText = document.getElementById('hugeLiveClock');
 
-            // 恢復預設 1:2
-            left.className = "clock-panel p-6 flex flex-col relative bg-[#1c1c1e]";
-            right.className = "clock-panel p-6 flex items-center justify-center relative bg-black";
+            // 恢復基礎淺色樣式
+            left.className = "clock-panel p-6 flex flex-col relative bg-[#fdfcf9] border-[#d3cabc]";
+            right.className = "clock-panel p-6 flex items-center justify-center relative bg-[#f4f1ea] shadow-inner";
             
             if (mode === 'split') {
-                left.classList.add('w-full', 'md:w-1/3', 'h-1/2', 'md:h-full', 'border-b', 'md:border-b-0', 'md:border-r', 'border-[#3a3a3c]');
+                left.classList.add('w-full', 'md:w-1/3', 'h-1/2', 'md:h-full', 'border-b', 'md:border-b-0', 'md:border-r');
                 right.classList.add('w-full', 'md:w-2/3', 'h-1/2', 'md:h-full');
-                hugeText.className = "digital-clock-font text-[20vw] md:text-[18vw] text-white tracking-tighter leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]";
+                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split";
             } else if (mode === 'left') {
                 left.classList.add('w-full', 'h-full');
                 right.classList.add('hidden');
             } else if (mode === 'right') {
                 left.classList.add('hidden');
                 right.classList.add('w-full', 'h-full');
-                hugeText.className = "digital-clock-font text-[28vw] md:text-[25vw] text-white tracking-tighter leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.6)]";
+                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full";
             }
         }
 
@@ -384,33 +388,29 @@
                 if (data) {
                     tasks = data.tasks || []; globalTaskData = data.globalTaskData || {};
                     historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || "";
-                    cleanTasks = data.cleanTasks || ["潔牙", "掃地"]; // 載入檢核項目
-                    historyClean = data.historyClean || {}; // 載入檢核歷史
+                    cleanTasks = data.cleanTasks || ["潔牙", "掃地"]; historyClean = data.historyClean || {};
                     if(data.examSchedule) examScheduleStr = data.examSchedule;
-                    
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
                     renderAll(); 
                     if(document.getElementById('examScheduleInput')) document.getElementById('examScheduleInput').value = examScheduleStr;
                 } else if (isFirstLoad) {
-                    console.log("雲端無資料，執行本機資料遷移...");
                     migrateLocalDataToCloud();
                 }
                 isFirstLoad = false;
-                
                 const syncIcon = document.getElementById('syncStatus');
                 syncIcon.style.opacity = '0.5'; setTimeout(() => syncIcon.style.opacity = '1', 200);
             });
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v21_tasks') || localStorage.getItem('v20_tasks');
+            const t = localStorage.getItem('v22_tasks') || localStorage.getItem('v21_tasks');
             if (t) {
                 tasks = JSON.parse(t);
-                globalTaskData = JSON.parse(localStorage.getItem('v21_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v21_historyAtt') || '{}');
-                dailyNotes = JSON.parse(localStorage.getItem('v21_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v21_announcements') || '';
-                if(localStorage.getItem('v21_count')) document.getElementById('studentCount').value = localStorage.getItem('v21_count');
+                globalTaskData = JSON.parse(localStorage.getItem('v22_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v22_historyAtt') || '{}');
+                dailyNotes = JSON.parse(localStorage.getItem('v22_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v22_announcements') || '';
+                if(localStorage.getItem('v22_count')) document.getElementById('studentCount').value = localStorage.getItem('v22_count');
                 saveToCloud();
             }
         }
@@ -433,12 +433,11 @@
             document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean');
             document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             
-            // 切換輸入框提示
             const inputField = document.getElementById('itemName');
             if(tab === 'task') inputField.placeholder = "新增作業名稱...";
             else if(tab === 'clean') inputField.placeholder = "新增檢核項目...";
             
-            document.getElementById('taskInputGroup').classList.toggle('hidden', tab === 'att'); // 出缺勤隱藏新增按鈕
+            document.getElementById('taskInputGroup').classList.toggle('hidden', tab === 'att'); 
             
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`;
             document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`;
@@ -485,7 +484,7 @@
             let studentsHeader = '';
             for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-bold">${i}號</th>`;
 
-            // 📋 作業矩陣
+            // 作業
             const tBody = document.getElementById('taskBody');
             document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             tBody.innerHTML = '';
@@ -506,7 +505,7 @@
                 tBody.innerHTML += row + '</tr>';
             });
 
-            // 🧹 潔牙掃地檢核矩陣
+            // 檢核
             const cBody = document.getElementById('cleanBody');
             document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`;
             cBody.innerHTML = '';
@@ -527,7 +526,7 @@
                 cBody.innerHTML += row + '</tr>';
             });
 
-            // 📅 出勤矩陣
+            // 出勤
             const aBody = document.getElementById('attendanceBody');
             document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
             let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-bold text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-medium">點擊切換假別</div></td>`;
@@ -567,7 +566,7 @@
             if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-bold text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
 
             let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}号 (${attLabels[todaysAtt[i]]})</span>`);
+            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-bold text-stone-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-medium">該日無人請假</span>';
         }
 
@@ -591,12 +590,11 @@
             }
         }
 
-        // 🌟 新增：檢核行為觸發 🌟
         function cycleClean(id, t) {
             const d = document.getElementById('currentDate').value;
             if(!historyClean[d]) historyClean[d] = {};
             if(!historyClean[d][id]) historyClean[d][id] = {};
-            historyClean[d][id][t] = ((historyClean[d][id][t]||0)+1)%2; // 0和1切換
+            historyClean[d][id][t] = ((historyClean[d][id][t]||0)+1)%2; 
             saveToCloud();
         }
         function deleteCleanTask(i) { if(confirm('確定移除此檢核項目？')) { cleanTasks.splice(i, 1); saveToCloud(); } }
@@ -616,7 +614,6 @@
             const count = parseInt(document.getElementById('studentCount').value);
             const wb = XLSX.utils.book_new();
 
-            // Sheet 1: 作業
             let taskRows = [];
             for (let i = 1; i <= count; i++) {
                 let row = { '座號': i };
@@ -625,7 +622,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
 
-            // Sheet 2: 出缺勤
             let attRows = [];
             const allDates = Object.keys(historyAtt).sort();
             for (let i = 1; i <= count; i++) {
@@ -642,7 +638,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤學期總表");
 
-            // 🌟 Sheet 3: 日常檢核 (潔牙掃地)
             let cleanRows = [];
             const cleanDates = Object.keys(historyClean).sort();
             for (let i = 1; i <= count; i++) {
@@ -657,7 +652,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), "日常檢核表");
 
-            // Sheet 4: 筆記
             let noteRows = [];
             Object.keys(dailyNotes).sort().forEach(d => {
                 if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] });
