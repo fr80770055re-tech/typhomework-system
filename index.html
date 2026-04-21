@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v25 - 自由拖曳版</title>
+    <title>班級管理系統 v26 - 觸控流暢優化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -99,7 +99,6 @@
             .clock-full { font-size: min(14vw, 35vh); line-height: 1; }
         }
 
-        /* 🌟 拖曳時的視覺反饋 🌟 */
         .sortable-ghost { opacity: 0.4; background-color: rgba(223, 168, 136, 0.3); }
         .drag-handle { cursor: grab; transition: 0.2s; }
         .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
@@ -122,7 +121,7 @@
         
         <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
             <h1 class="font-black text-2xl md:text-3xl tracking-wide flex items-center gap-3">
-                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v25</span>
+                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v26</span>
                 <span id="liveClock" class="bg-black/30 px-3 py-1.5 rounded-xl font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
                 <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
                     <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
@@ -264,6 +263,7 @@
     </div>
 
     <script>
+        // 初始化
         const firebaseConfig = {
             apiKey: "AIzaSyB2jePwSyZH8xEux6mPc-LlYXoF7xJruIo",
             authDomain: "typhomeworksystem.firebaseapp.com",
@@ -285,6 +285,67 @@
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
+        // ==========================================
+        // 🌟 核心修復 1：SortableJS 觸控設定 🌟
+        // ==========================================
+        let taskSortable = null;
+        let cleanSortable = null;
+
+        function initSortable() {
+            const taskTbody = document.getElementById('taskBody');
+            const cleanTbody = document.getElementById('cleanBody');
+            
+            const opts = {
+                animation: 200,
+                handle: '.drag-handle',
+                filter: 'button, .state-btn, input, textarea', // 🌟 關鍵：排除按鈕，絕對不攔截原生的點擊事件
+                preventOnFilter: false, // 🌟 關鍵：讓按鈕的原本 onClick 正常運作
+                delay: 150, // 🌟 關鍵：在手機上，手指要長按把手 0.15 秒才會觸發拖曳，輕點就不會被誤判
+                delayOnTouchOnly: true,
+                ghostClass: 'sortable-ghost'
+            };
+
+            // 每次重新渲染前，確保舊的拖曳監聽器被乾淨清除，避免錯亂
+            if(taskSortable) taskSortable.destroy();
+            if(taskTbody) {
+                taskSortable = new Sortable(taskTbody, {
+                    ...opts,
+                    onEnd: function (evt) {
+                        const movedItem = tasks.splice(evt.oldIndex, 1)[0];
+                        tasks.splice(evt.newIndex, 0, movedItem);
+                        saveToCloud();
+                    }
+                });
+            }
+
+            if(cleanSortable) cleanSortable.destroy();
+            if(cleanTbody) {
+                cleanSortable = new Sortable(cleanTbody, {
+                    ...opts,
+                    onEnd: function (evt) {
+                        const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0];
+                        cleanTasks.splice(evt.newIndex, 0, movedItem);
+                        saveToCloud();
+                    }
+                });
+            }
+        }
+
+        // ==========================================
+        // 🌟 核心修復 2：優化雲端存檔邏輯 🌟
+        // ==========================================
+        function saveToCloud() {
+            if(!currentUser) return;
+            const data = { tasks, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
+            
+            // 移除原本在這裡的 renderAll()！
+            // 改成交由 Firebase 的 on('value') 監聽器自動捕捉變動再重繪，避免畫面瞬間閃爍或卡頓
+            db.ref('users/' + currentUser.uid).set(data).catch(err => {
+                alert("雲端同步失敗！請檢查網路連線。錯誤：" + err.message);
+            });
+        }
+
+        // 其他功能維持不變
         function getLocalDateString() {
             const now = new Date();
             return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -382,22 +443,19 @@
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v24_tasks') || localStorage.getItem('v23_tasks');
+            const t = localStorage.getItem('v25_tasks') || localStorage.getItem('v24_tasks') || localStorage.getItem('v23_tasks');
             if (t) {
-                tasks = JSON.parse(t); globalTaskData = JSON.parse(localStorage.getItem('v24_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v24_historyAtt') || '{}'); dailyNotes = JSON.parse(localStorage.getItem('v24_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v24_announcements') || '';
-                if(localStorage.getItem('v24_count')) document.getElementById('studentCount').value = localStorage.getItem('v24_count');
+                tasks = JSON.parse(t); 
+                globalTaskData = JSON.parse(localStorage.getItem('v25_globalTaskData') || localStorage.getItem('v24_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v25_historyAtt') || localStorage.getItem('v24_historyAtt') || '{}'); 
+                dailyNotes = JSON.parse(localStorage.getItem('v25_dailyNotes') || localStorage.getItem('v24_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v25_announcements') || localStorage.getItem('v24_announcements') || '';
+                if(localStorage.getItem('v25_count')) document.getElementById('studentCount').value = localStorage.getItem('v25_count');
                 saveToCloud();
             }
         }
 
-        function saveToCloud() {
-            if(!currentUser) return;
-            const data = { tasks, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
-            db.ref('users/' + currentUser.uid).set(data);
-            renderAll(); 
-        }
+        function updateFontSize(val) { document.documentElement.style.setProperty('--base-font-size', val + 'px'); }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -435,34 +493,6 @@
             saveToCloud(); closeNoteModal();
         }
 
-        // 🌟 初始化拖曳功能 (SortableJS) 🌟
-        function initSortable() {
-            new Sortable(document.getElementById('taskBody'), {
-                animation: 200,
-                handle: '.drag-handle', // 只有抓著把手才能拖曳
-                ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    const movedItem = tasks.splice(evt.oldIndex, 1)[0];
-                    tasks.splice(evt.newIndex, 0, movedItem);
-                    saveToCloud(); // 拖曳放開後立即同步至雲端
-                }
-            });
-
-            new Sortable(document.getElementById('cleanBody'), {
-                animation: 200,
-                handle: '.drag-handle',
-                ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0];
-                    cleanTasks.splice(evt.newIndex, 0, movedItem);
-                    saveToCloud();
-                }
-            });
-        }
-
-        // 避免重複初始化
-        let isSortableInitialized = false;
-
         function renderAll() {
             const date = document.getElementById('currentDate').value;
             const count = parseInt(document.getElementById('studentCount').value) || 0;
@@ -480,7 +510,7 @@
             let studentsHeader = '';
             for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`;
 
-            // 作業 (加入拖曳把手)
+            // 作業矩陣
             const tBody = document.getElementById('taskBody');
             document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`;
             tBody.innerHTML = '';
@@ -504,7 +534,7 @@
                 tBody.innerHTML += row + '</tr>';
             });
 
-            // 檢核 (加入拖曳把手)
+            // 檢核矩陣
             const cBody = document.getElementById('cleanBody');
             document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`;
             cBody.innerHTML = '';
@@ -571,11 +601,8 @@
             for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border border-white px-3 py-1 rounded-lg font-black text-stone-800">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
 
-            // 確保拖曳功能被初始化
-            if(!isSortableInitialized) {
-                initSortable();
-                isSortableInitialized = true;
-            }
+            // 🌟 核心修復：每次重繪完畢，必定重新綁定拖曳功能，確保事件正確 🌟
+            initSortable();
         }
 
         function addItem() { 
