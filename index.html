@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v29 - 空間大解放版</title>
+    <title>班級管理系統 v30 - 穩定防崩與快打版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -82,7 +82,6 @@
         .report-open { height: 35%; min-height: 250px; }
         .report-closed { height: 30px; overflow: hidden; padding-bottom: 0; }
         
-        /* 🌟 右側滑出式抽屜看板 (Drawer) 🌟 */
         .drawer-panel {
             position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100vh;
             z-index: 90; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -137,7 +136,7 @@
         </div>
     </div>
 
-    <!-- 🌟 新增：右側滑出式抽屜看板與背景 🌟 -->
+    <!-- 宣導抽屜 -->
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="toggleAnnounceDrawer(false)"></div>
     <div id="announceDrawer" class="drawer-panel p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6 border-b border-stone-200 pb-3 shrink-0">
@@ -146,7 +145,6 @@
             </h2>
             <button onclick="toggleAnnounceDrawer(false)" class="text-stone-400 hover:text-red-500 font-black text-2xl transition p-2">✕</button>
         </div>
-        <!-- 宣導事項內容容器 -->
         <div class="flex-1 overflow-y-auto pr-1">
             <ul id="announceList" class="list-disc list-inside text-stone-800 font-black text-lg space-y-3 leading-relaxed ml-1"></ul>
             <div id="emptyAnnounceText" class="text-stone-400 font-bold italic text-center py-12 hidden">目前尚無發布宣導事項</div>
@@ -183,7 +181,6 @@
                     <span class="text-sm">📅</span>
                     <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-xs md:text-sm" onchange="renderAll()">
                 </div>
-                <!-- 🌟 宣導按鈕功能改為開啟滑出式抽屜 🌟 -->
                 <button onclick="toggleAnnounceDrawer(true)" id="btnDrawerTrigger" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#c99070] shadow-sm transition relative">📣 宣導 <span id="announceDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span></button>
                 <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
             </div>
@@ -205,7 +202,6 @@
             <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive border-l border-white/30">📅 出缺勤</button>
         </div>
 
-        <!-- 視窗群 (因為移除了宣導看板，這裡的表格高度在手機上將會獲得極大釋放) -->
         <div id="taskView" class="scroll-section"><table class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table></div>
         <div id="cleanView" class="scroll-section hidden"><table class="w-full"><thead id="cleanHeader"></thead><tbody id="cleanBody"></tbody></table></div>
         <div id="gradeView" class="scroll-section hidden"><table class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table></div>
@@ -250,7 +246,7 @@
             <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-8 flex flex-col relative">
                 <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
                 <h2 class="text-2xl md:text-3xl font-black text-[#6b6356] mb-5 tracking-wide">📝 考科與時間</h2>
-                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400" placeholder="08:40 - 09:20 國語&#10;09:30 - 10:10 數學"></textarea>
+                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400"></textarea>
             </div>
             
             <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-8 flex items-center justify-center relative shadow-inner overflow-hidden">
@@ -280,7 +276,7 @@
         </div>
     </div>
 
-    <!-- 編輯宣導事項 Modal -->
+    <!-- Modal 彈窗群 -->
     <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -294,7 +290,6 @@
         </div>
     </div>
 
-    <!-- 記事 Modal -->
     <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-3xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -324,7 +319,7 @@
 
         let tasks = []; let globalTaskData = {}; 
         let historyAtt = {}; let dailyNotes = {}; let announcements = ""; 
-        let cleanTasks = ["潔牙", "掃地"]; let historyClean = {}; 
+        let cleanTasks = []; let historyClean = {}; 
         let examScheduleStr = "08:40 - 09:20 國語\n09:30 - 10:10 數學";
 
         let currentGradeSubject = '國語';
@@ -351,16 +346,19 @@
             }
         }
 
+        // 🌟 防呆寫入：過濾特殊字元，保護雲端結構 🌟
         function saveToCloud() {
             if(!currentUser) return;
-            tasks = tasks.map(t => t.replace(/[.#$/\[\]]/g, '_'));
-            cleanTasks = cleanTasks.map(t => t.replace(/[.#$/\[\]]/g, '_'));
+            tasks = (tasks || []).map(t => t.replace(/[.#$/\[\]]/g, '_'));
+            cleanTasks = (cleanTasks || []).map(t => t.replace(/[.#$/\[\]]/g, '_'));
+            
             let safeGlobalTaskData = {};
             for(let id in globalTaskData) {
                 safeGlobalTaskData[id] = {};
                 for(let t in globalTaskData[id]) safeGlobalTaskData[id][t.replace(/[.#$/\[\]]/g, '_')] = globalTaskData[id][t];
             }
             globalTaskData = safeGlobalTaskData;
+            
             let safeHistoryClean = {};
             for(let d in historyClean) {
                 safeHistoryClean[d] = {};
@@ -387,18 +385,10 @@
             db.ref('users/' + currentUser.uid).set(data).catch(err => console.error("同步失敗:", err));
         }
 
-        // 🌟 新增：滑出式抽屜看板控制邏輯 🌟
         function toggleAnnounceDrawer(show) {
-            const drawer = document.getElementById('announceDrawer');
-            const backdrop = document.getElementById('drawerBackdrop');
-            if (show) {
-                drawer.classList.add('drawer-open');
-                backdrop.classList.add('backdrop-show');
-                document.getElementById('announceDot').classList.add('hidden'); // 看完就消掉紅點
-            } else {
-                drawer.classList.remove('drawer-open');
-                backdrop.classList.remove('backdrop-show');
-            }
+            const drawer = document.getElementById('announceDrawer'); const backdrop = document.getElementById('drawerBackdrop');
+            if (show) { drawer.classList.add('drawer-open'); backdrop.classList.add('backdrop-show'); document.getElementById('announceDot').classList.add('hidden'); }
+            else { drawer.classList.remove('drawer-open'); backdrop.classList.remove('backdrop-show'); }
         }
 
         function getLocalDateString() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
@@ -436,8 +426,7 @@
 
         auth.onAuthStateChanged((user) => {
             if (user) {
-                currentUser = user;
-                document.getElementById('loginScreen').style.opacity = '0'; setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
+                currentUser = user; document.getElementById('loginScreen').style.opacity = '0'; setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
                 document.getElementById('mainApp').classList.remove('opacity-0', 'pointer-events-none'); startDatabaseSync();
             } else {
                 currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
@@ -453,14 +442,24 @@
             db.ref('users/' + currentUser.uid).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    // 檢查宣導事項是否有更新，若有且不為空，在手機按鈕亮紅點
-                    if (data.announcements && data.announcements !== announcements && isFirstLoad === false) {
-                        document.getElementById('announceDot').classList.remove('hidden');
-                    }
-                    tasks = data.tasks || []; globalTaskData = data.globalTaskData || {};
-                    historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || "";
-                    cleanTasks = data.cleanTasks || ["潔牙", "掃地"]; historyClean = data.historyClean || {};
-                    grades = data.grades || { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+                    if (data.announcements && data.announcements !== announcements && isFirstLoad === false) { document.getElementById('announceDot').classList.remove('hidden'); }
+                    
+                    // 🌟 核心防護：避免 Firebase 吃掉空陣列導致崩潰 🌟
+                    tasks = data.tasks || []; 
+                    globalTaskData = data.globalTaskData || {};
+                    historyAtt = data.historyAtt || {}; 
+                    dailyNotes = data.dailyNotes || {}; 
+                    announcements = data.announcements || "";
+                    cleanTasks = data.cleanTasks || []; // 放棄強制塞入預設值，完全尊重使用者的刪除
+                    historyClean = data.historyClean || {};
+                    
+                    grades = data.grades || {};
+                    ["國語", "數學"].forEach(sub => {
+                        if(!grades[sub]) grades[sub] = {};
+                        grades[sub].exams = grades[sub].exams || [];
+                        grades[sub].weights = grades[sub].weights || {};
+                        grades[sub].scores = grades[sub].scores || {};
+                    });
                     
                     if(data.examSchedule) examScheduleStr = data.examSchedule;
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
@@ -474,17 +473,9 @@
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v28_tasks') || localStorage.getItem('v27_tasks');
-            if (t) {
-                tasks = JSON.parse(t); globalTaskData = JSON.parse(localStorage.getItem('v28_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v28_historyAtt') || '{}'); dailyNotes = JSON.parse(localStorage.getItem('v28_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v28_announcements') || '';
-                if(localStorage.getItem('v28_count')) document.getElementById('studentCount').value = localStorage.getItem('v28_count');
-                saveToCloud();
-            }
+            // 從 LocalStorage 載入遺產並確保資料結構安全
+            saveToCloud();
         }
-
-        function updateFontSize(val) { document.documentElement.style.setProperty('--base-font-size', val + 'px'); }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -535,6 +526,19 @@
             saveToCloud(); closeNoteModal();
         }
 
+        // 🌟 新增：Enter 跳轉下一個輸入框功能 🌟
+        function handleGradeEnter(e, currentSid, examName) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 防止送出或其他預設行為
+                // 尋找同一個考試、座號加一的那個輸入框
+                const nextInput = document.querySelector(`.grade-input[data-exam="${examName}"][data-sid="${currentSid + 1}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select(); // 自動全選裡面的數字，方便直接覆蓋打新分數
+                }
+            }
+        }
+
         function renderGrades() {
             if(!grades[currentGradeSubject]) grades[currentGradeSubject] = { exams: [], weights: {}, scores: {} };
             const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
@@ -562,7 +566,9 @@
                 let totalScore = 0; let totalWeight = 0;
                 subData.exams.forEach(exam => {
                     const val = subData.scores[i]?.[exam] !== undefined ? subData.scores[i][exam] : "";
-                    rowHtml += `<td class="p-2 border-b border-white/50 text-center"><input type="number" class="grade-input" value="${val}" onchange="updateScore(${i}, '${exam}', this.value)" placeholder="-"></td>`;
+                    rowHtml += `<td class="p-2 border-b border-white/50 text-center">
+                        <input type="number" class="grade-input" data-exam="${exam}" data-sid="${i}" value="${val}" onchange="updateScore(${i}, '${exam}', this.value)" onkeydown="handleGradeEnter(event, ${i}, '${exam}')" placeholder="-">
+                    </td>`;
                     const w = Number(subData.weights[exam]) || 1;
                     if(val !== "") { totalScore += Number(val) * w; totalWeight += w; }
                 });
@@ -589,7 +595,7 @@
                     if(s !== undefined && s !== null && s !== "") {
                         let raw = Number(s);
                         let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60);
-                        subData.scores[i][examName] = Math.min(100, Math.max(0, adj)); // 安全防禦鎖
+                        subData.scores[i][examName] = Math.min(100, Math.max(0, adj));
                     }
                 }
                 saveToCloud();
@@ -603,9 +609,7 @@
             if (!historyAtt[date]) historyAtt[date] = {}; const todaysAtt = historyAtt[date];
             if (!historyClean[date]) historyClean[date] = {}; const todaysClean = historyClean[date];
 
-            // 🌟 升級：側邊滑出式看板渲染 🌟
-            const aList = document.getElementById('announceList');
-            const emptyText = document.getElementById('emptyAnnounceText');
+            const aList = document.getElementById('announceList'); const emptyText = document.getElementById('emptyAnnounceText');
             const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
             
             if (announcements) {
@@ -746,18 +750,15 @@
 
         function cycleAttendance(id) { const d = document.getElementById('currentDate').value; if(!historyAtt[d]) historyAtt[d] = {}; historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveToCloud(); }
 
-        // 🌟 完美的試算表分類導出 🌟
         function exportExcel() {
             const count = parseInt(document.getElementById('studentCount').value); const wb = XLSX.utils.book_new();
             
-            // 1. 作業
             let taskRows = [];
             for (let i = 1; i <= count; i++) {
                 let row = { '座號': i }; tasks.forEach(t => row[t] = ["未交", "待訂正", "已完成"][(globalTaskData[i] && globalTaskData[i][t]) || 0]); taskRows.push(row);
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
 
-            // 2. 出缺勤
             let attRows = []; const allDates = Object.keys(historyAtt).sort();
             for (let i = 1; i <= count; i++) {
                 let row = { '座號': i }; let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; 
@@ -767,7 +768,6 @@
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤總表");
 
-            // 3. 🌟 潔牙與打掃徹底拆分到獨立工作表 🌟
             const cleanDates = Object.keys(historyClean).sort();
             cleanTasks.forEach(taskName => {
                 let cleanRows = [];
@@ -779,7 +779,6 @@
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`);
             });
 
-            // 4. 成績
             ["國語", "數學"].forEach(subject => {
                 let gradeRows = []; const subData = grades[subject] || { exams: [], weights: {}, scores: {} };
                 for(let i=1; i<=count; i++) {
@@ -793,7 +792,6 @@
                 if(subData.exams.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), `${subject}期末成績`);
             });
 
-            // 5. 記事本
             let noteRows = []; Object.keys(dailyNotes).sort().forEach(d => { if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] }); });
             if (noteRows.length > 0) { const wsNotes = XLSX.utils.json_to_sheet(noteRows); wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本"); }
             
