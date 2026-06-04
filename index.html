@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v27 - 雲端防呆穩定版</title>
+    <title>班級管理系統 v29 - 空間大解放版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
+    <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -42,7 +44,7 @@
         .scroll-section { flex: 1; overflow: auto; background: transparent; }
         
         .state-btn {
-            width: 100%; min-width: 60px; height: 55px; border-radius: 18px; 
+            width: 100%; min-width: 62px; height: 55px; border-radius: 18px; 
             font-weight: 900; font-size: 1.15em; display: flex; align-items: center; justify-content: center;
             cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(4px);
         }
@@ -67,25 +69,35 @@
         .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 6px; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
 
         table { border-collapse: separate; border-spacing: 0; }
-        th { background: rgba(240, 235, 225, 0.85); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; }
+        th { background: rgba(240, 235, 225, 0.9); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; white-space: nowrap; }
         th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; }
-        .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.85); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
+        .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.9); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
         th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
 
-        .tab-btn { flex: 1; padding: 14px 0; font-weight: 900; font-size: 1.1em; transition: 0.2s; border-radius: 18px 18px 0 0; }
+        .tab-btn { flex: 1; padding: 12px 0; font-weight: 900; font-size: 1.05em; transition: 0.2s; border-radius: 18px 18px 0 0; min-width: 85px; white-space: nowrap; }
         .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 5px solid #9aa5b1; }
         .tab-inactive { background-color: rgba(255,255,255,0.2); color: #a39b8e; }
 
         .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 0 15px 15px 15px; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         .report-open { height: 35%; min-height: 250px; }
         .report-closed { height: 30px; overflow: hidden; padding-bottom: 0; }
-        .report-title { font-size: 1.25em; font-weight: 900; color: #6b6356; margin-bottom: 8px; }
+        
+        /* 🌟 右側滑出式抽屜看板 (Drawer) 🌟 */
+        .drawer-panel {
+            position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100vh;
+            z-index: 90; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(20px);
+            border-left: 2px solid rgba(255,255,255,0.8); box-shadow: -10px 0 30px rgba(0,0,0,0.08);
+        }
+        .drawer-open { right: 0 !important; }
+        .drawer-backdrop { position: fixed; inset: 0; bg: black/20; z-index: 80; backdrop-blur: sm; transition: opacity 0.3s; opacity: 0; pointer-events: none; }
+        .backdrop-show { opacity: 1 !important; pointer-events: auto !important; background-color: rgba(0,0,0,0.15); backdrop-filter: blur(4px); }
 
         @media (max-height: 500px) and (orientation: landscape) {
             .glass-header { padding-top: 4px; padding-bottom: 4px; }
             .control-bar { padding: 4px 8px; }
             .state-btn { height: 45px; font-size: 1rem; }
-            .tab-btn { padding: 6px 0; font-size: 1rem; }
+            .tab-btn { padding: 6px 0; font-size: 0.9rem; }
         }
 
         .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: -0.01em; } 
@@ -100,8 +112,16 @@
         }
 
         .sortable-ghost { opacity: 0.4; background-color: rgba(223, 168, 136, 0.3); }
-        .drag-handle { cursor: grab; transition: 0.2s; }
+        .drag-handle { cursor: grab; transition: 0.2s; padding: 4px; }
         .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
+
+        .grade-input {
+            width: 70px; text-align: center; font-weight: 900; font-size: 1.2em; 
+            padding: 8px 4px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.8); 
+            background: rgba(255,255,255,0.5); outline: none; transition: 0.2s; color: #6b6356;
+        }
+        .grade-input:focus { border-color: #9aa5b1; background: white; box-shadow: 0 0 10px rgba(154,165,177,0.3); }
+        .weight-input { width: 45px; text-align: center; font-weight: 900; font-size: 0.9em; padding: 2px; border-radius: 8px; border: 1px solid rgba(200,200,200,0.8); background: rgba(255,255,255,0.8); outline: none; }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -117,56 +137,78 @@
         </div>
     </div>
 
+    <!-- 🌟 新增：右側滑出式抽屜看板與背景 🌟 -->
+    <div id="drawerBackdrop" class="drawer-backdrop" onclick="toggleAnnounceDrawer(false)"></div>
+    <div id="announceDrawer" class="drawer-panel p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6 border-b border-stone-200 pb-3 shrink-0">
+            <h2 class="text-xl font-black text-[#8a4523] flex items-center gap-2">
+                <span>📣</span> 班級即時宣導看板
+            </h2>
+            <button onclick="toggleAnnounceDrawer(false)" class="text-stone-400 hover:text-red-500 font-black text-2xl transition p-2">✕</button>
+        </div>
+        <!-- 宣導事項內容容器 -->
+        <div class="flex-1 overflow-y-auto pr-1">
+            <ul id="announceList" class="list-disc list-inside text-stone-800 font-black text-lg space-y-3 leading-relaxed ml-1"></ul>
+            <div id="emptyAnnounceText" class="text-stone-400 font-bold italic text-center py-12 hidden">目前尚無發布宣導事項</div>
+        </div>
+        <div class="mt-4 shrink-0">
+            <button onclick="openAnnounceModal()" class="w-full bg-[#dfa888] text-white py-3 rounded-xl font-black text-base shadow-sm hover:bg-[#c99070] transition">📝 編輯宣導事項</button>
+        </div>
+    </div>
+
     <div id="mainApp" class="main-container glass-panel sm:rounded-[2.5rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500">
         
-        <div class="px-6 py-4 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
-            <h1 class="font-black text-2xl md:text-3xl tracking-wide flex items-center gap-3">
-                Class Admin <span class="text-stone-400 font-medium text-lg ml-1 hidden md:inline">v27</span>
-                <span id="liveClock" class="bg-black/30 px-3 py-1.5 rounded-xl font-mono text-sm shadow-inner tracking-wider">00:00:00</span>
-                <span id="syncStatus" class="flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg border border-emerald-500/30">
-                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> 已同步
+        <div class="px-6 py-3 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
+            <h1 class="font-black text-xl md:text-2xl tracking-wide flex items-center gap-2">
+                Class Admin
+                <span id="liveClock" class="bg-black/30 px-2.5 py-1 rounded-xl font-mono text-xs md:text-sm shadow-inner tracking-wider">00:00:00</span>
+                <span id="syncStatus" class="flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                    <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span></span> 已同步
                 </span>
             </h1>
-            <div class="flex items-center gap-3">
-                <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-5 py-2 rounded-xl font-black text-base shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
-                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-4 py-2 rounded-xl font-black text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
-                <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-3 py-2 rounded-xl font-black text-sm shadow-md transition text-white border border-white/20">登出</button>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-3.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
+                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-3.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
+                <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-2.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-white/20">登出</button>
             </div>
         </div>
 
-        <div class="control-bar p-4 md:p-5 flex flex-wrap items-center justify-between gap-3 bg-white/30 shrink-0 border-b border-white/50">
-            <div class="flex flex-wrap items-center gap-2 md:gap-3">
-                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
-                    <label class="text-base font-black text-stone-600 hidden sm:block">人數:</label>
-                    <input type="number" id="studentCount" value="5" class="w-14 bg-transparent font-black text-center outline-none text-stone-700 text-base" onchange="saveToCloud()">
+        <div class="control-bar p-3 flex flex-wrap items-center justify-between gap-2.5 bg-white/30 shrink-0 border-b border-white/50">
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-xl shadow-sm border border-white/60">
+                    <label class="text-sm font-black text-stone-600 hidden sm:block">人數:</label>
+                    <input type="number" id="studentCount" value="5" class="w-10 bg-transparent font-black text-center outline-none text-stone-700 text-sm" onchange="saveToCloud()">
                 </div>
-                <div class="flex items-center gap-2 bg-white/60 px-4 py-2 rounded-xl shadow-sm border border-white/60">
-                    <span class="text-base">📅</span>
-                    <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-sm" onchange="renderAll()">
+                <div class="flex items-center gap-1.5 bg-white/60 px-2.5 py-1.5 rounded-xl shadow-sm border border-white/60">
+                    <span class="text-sm">📅</span>
+                    <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-xs md:text-sm" onchange="renderAll()">
                 </div>
-                <button onclick="openAnnounceModal()" class="bg-[#dfa888] text-white px-4 py-2 rounded-xl font-black text-base hover:bg-[#c99070] shadow-sm transition">📣 宣導</button>
-                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-4 py-2 rounded-xl font-black text-base hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
+                <!-- 🌟 宣導按鈕功能改為開啟滑出式抽屜 🌟 -->
+                <button onclick="toggleAnnounceDrawer(true)" id="btnDrawerTrigger" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#c99070] shadow-sm transition relative">📣 宣導 <span id="announceDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span></button>
+                <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
             </div>
             
-            <div id="taskInputGroup" class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 transition-all">
-                <input type="text" id="itemName" placeholder="新增名稱..." class="flex-1 sm:w-48 p-2 px-4 border border-white/80 rounded-xl font-black outline-none focus:border-stone-400 bg-white/60 shadow-sm text-base">
-                <button onclick="addItem()" class="bg-[#6b6356] text-white px-5 py-2 rounded-xl font-black text-base hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
+            <div id="dynamicInputGroup" class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0 transition-all">
+                <div id="gradeSubjectSwitch" class="hidden flex items-center gap-1 bg-white/50 p-1 rounded-xl shadow-sm border border-white/60">
+                    <button onclick="switchGradeSubject('國語')" id="btnSubChinese" class="px-2.5 py-1 rounded-lg font-black text-xs bg-white text-stone-700 shadow-sm transition">國語</button>
+                    <button onclick="switchGradeSubject('數學')" id="btnSubMath" class="px-2.5 py-1 rounded-lg font-black text-xs text-stone-500 hover:bg-white/50 transition">數學</button>
+                </div>
+                <input type="text" id="itemName" placeholder="新增名稱..." class="flex-1 sm:w-40 p-1.5 px-3 border border-white/80 rounded-xl font-black outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
+                <button onclick="addItem()" class="bg-[#6b6356] text-white px-4 py-1.5 rounded-xl font-black text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
             </div>
         </div>
 
-        <div id="announceBoard" class="hidden shrink-0 bg-white/50 border-b border-white/60 px-8 py-4">
-            <h2 class="text-lg font-black text-[#8a4523] flex items-center gap-2 mb-2"><span class="text-xl">📣</span>現在應完成事項</h2>
-            <ul id="announceList" class="list-disc list-inside text-stone-800 font-black text-xl space-y-1 ml-2 leading-relaxed"></ul>
-        </div>
-
-        <div class="flex shrink-0 px-3 pt-3 gap-1 bg-white/10">
+        <div class="flex shrink-0 px-2 pt-2 gap-1 bg-white/10 overflow-x-auto">
             <button id="btnTaskTab" onclick="switchTab('task')" class="tab-btn tab-active">📋 作業進度</button>
-            <button id="btnCleanTab" onclick="switchTab('clean')" class="tab-btn tab-inactive border-l border-white/30">🧹 潔牙掃地檢核</button>
+            <button id="btnCleanTab" onclick="switchTab('clean')" class="tab-btn tab-inactive border-l border-white/30">🧹 潔牙掃地</button>
+            <button id="btnGradeTab" onclick="switchTab('grade')" class="tab-btn tab-inactive border-l border-white/30 text-[#8a4523]">📊 成績登打</button>
             <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive border-l border-white/30">📅 出缺勤</button>
         </div>
 
+        <!-- 視窗群 (因為移除了宣導看板，這裡的表格高度在手機上將會獲得極大釋放) -->
         <div id="taskView" class="scroll-section"><table class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table></div>
         <div id="cleanView" class="scroll-section hidden"><table class="w-full"><thead id="cleanHeader"></thead><tbody id="cleanBody"></tbody></table></div>
+        <div id="gradeView" class="scroll-section hidden"><table class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table></div>
         <div id="attView" class="scroll-section hidden"><table class="w-full"><thead id="attHeader"></thead><tbody id="attendanceBody"></tbody></table></div>
 
         <div id="reportPanel" class="report-section glass-panel sm:rounded-b-[2.5rem] report-open border-t-0">
@@ -176,22 +218,23 @@
                 </button>
             </div>
             
-            <div id="reportGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5 h-full overflow-hidden transition-opacity duration-300">
-                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm h-full">
-                    <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-2 -ml-2 -mt-2 rounded-xl transition group">
-                        <span class="text-xl font-black">📌 未完成作業彙整</span>
-                        <span class="text-sm bg-stone-500/10 text-stone-700 px-4 py-1.5 rounded-xl opacity-80 group-hover:opacity-100 flex items-center gap-1.5 shadow-sm border border-white/60 font-black">⤢ 全螢幕投影</span>
+            <div id="reportGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden transition-opacity duration-300">
+                <div class="bg-white/60 p-4 rounded-2xl border border-white flex flex-col shadow-sm h-full">
+                    <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-1.5 -ml-1.5 -mt-1.5 rounded-xl transition group">
+                        <span class="text-base font-black">📌 未完成作業彙整</span>
+                        <span class="text-xs bg-stone-500/10 text-stone-700 px-3 py-1 rounded-xl opacity-80 group-hover:opacity-100 flex items-center gap-1 shadow-sm border border-white/60 font-black">⤢ 全螢幕投影</span>
                     </button>
-                    <div id="taskReport" class="text-base font-bold flex-1 overflow-y-auto mt-2 text-stone-700"></div>
+                    <div id="taskReport" class="text-sm font-bold flex-1 overflow-y-auto mt-1 text-stone-700"></div>
                 </div>
-                <div class="bg-white/60 p-5 rounded-2xl border border-white flex flex-col shadow-sm h-full">
-                    <div class="report-title text-stone-600 text-xl font-black mb-1">📌 今日狀態異動</div>
-                    <div id="attReport" class="flex flex-wrap gap-2 text-base mt-1 text-stone-700 flex-1 overflow-y-auto font-bold content-start"></div>
+                <div class="bg-white/60 p-4 rounded-2xl border border-white flex flex-col shadow-sm h-full">
+                    <div class="report-title text-stone-600 text-base font-black mb-1">📌 今日狀態異動</div>
+                    <div id="attReport" class="flex flex-wrap gap-2 text-sm mt-1 text-stone-700 flex-1 overflow-y-auto font-bold content-start"></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 考試大鐘 -->
     <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500 font-black">
         <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
             <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
@@ -219,6 +262,7 @@
         </div>
     </div>
 
+    <!-- 全螢幕投影 Modal -->
     <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col font-black">
         <div class="p-6 bg-[#4a4a48]/90 backdrop-blur-md text-white flex justify-between items-center shadow-lg shrink-0 border-b border-white/20">
             <h1 class="text-3xl md:text-4xl font-black tracking-widest text-stone-100">今日任務總覽 <span id="fsClock" class="ml-4 text-2xl font-mono opacity-80"></span></h1>
@@ -236,6 +280,7 @@
         </div>
     </div>
 
+    <!-- 編輯宣導事項 Modal -->
     <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -249,6 +294,7 @@
         </div>
     </div>
 
+    <!-- 記事 Modal -->
     <div id="noteModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-3xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -263,7 +309,6 @@
     </div>
 
     <script>
-        // 初始化
         const firebaseConfig = {
             apiKey: "AIzaSyB2jePwSyZH8xEux6mPc-LlYXoF7xJruIo",
             authDomain: "typhomeworksystem.firebaseapp.com",
@@ -282,95 +327,81 @@
         let cleanTasks = ["潔牙", "掃地"]; let historyClean = {}; 
         let examScheduleStr = "08:40 - 09:20 國語\n09:30 - 10:10 數學";
 
+        let currentGradeSubject = '國語';
+        let grades = { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
 
-        let taskSortable = null;
-        let cleanSortable = null;
+        let taskSortable = null; let cleanSortable = null;
 
         function initSortable() {
-            const taskTbody = document.getElementById('taskBody');
-            const cleanTbody = document.getElementById('cleanBody');
-            
-            const opts = {
-                animation: 200,
-                handle: '.drag-handle',
-                filter: 'button, .state-btn, input, textarea',
-                preventOnFilter: false,
-                delay: 150,
-                delayOnTouchOnly: true,
-                ghostClass: 'sortable-ghost'
-            };
-
+            const opts = { animation: 200, handle: '.drag-handle', filter: 'button, .state-btn, input, textarea', preventOnFilter: false, delay: 150, delayOnTouchOnly: true, ghostClass: 'sortable-ghost' };
             if(taskSortable) taskSortable.destroy();
-            if(taskTbody) {
-                taskSortable = new Sortable(taskTbody, {
-                    ...opts,
-                    onEnd: function (evt) {
-                        const movedItem = tasks.splice(evt.oldIndex, 1)[0];
-                        tasks.splice(evt.newIndex, 0, movedItem);
-                        saveToCloud();
-                    }
-                });
+            if(document.getElementById('taskBody')) {
+                taskSortable = new Sortable(document.getElementById('taskBody'), { ...opts, onEnd: function (evt) {
+                    const movedItem = tasks.splice(evt.oldIndex, 1)[0]; tasks.splice(evt.newIndex, 0, movedItem); saveToCloud();
+                }});
             }
-
             if(cleanSortable) cleanSortable.destroy();
-            if(cleanTbody) {
-                cleanSortable = new Sortable(cleanTbody, {
-                    ...opts,
-                    onEnd: function (evt) {
-                        const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0];
-                        cleanTasks.splice(evt.newIndex, 0, movedItem);
-                        saveToCloud();
-                    }
-                });
+            if(document.getElementById('cleanBody')) {
+                cleanSortable = new Sortable(document.getElementById('cleanBody'), { ...opts, onEnd: function (evt) {
+                    const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0]; cleanTasks.splice(evt.newIndex, 0, movedItem); saveToCloud();
+                }});
             }
         }
 
-        // ==========================================
-        // 🌟 核心防呆：雲端寫入前的資料自我淨化 🌟
-        // ==========================================
         function saveToCloud() {
             if(!currentUser) return;
-            
-            // 將所有陣列中的怪異符號取代為底線
             tasks = tasks.map(t => t.replace(/[.#$/\[\]]/g, '_'));
             cleanTasks = cleanTasks.map(t => t.replace(/[.#$/\[\]]/g, '_'));
-            
-            // 淨化 globalTaskData
             let safeGlobalTaskData = {};
             for(let id in globalTaskData) {
                 safeGlobalTaskData[id] = {};
-                for(let t in globalTaskData[id]) {
-                    safeGlobalTaskData[id][t.replace(/[.#$/\[\]]/g, '_')] = globalTaskData[id][t];
-                }
+                for(let t in globalTaskData[id]) safeGlobalTaskData[id][t.replace(/[.#$/\[\]]/g, '_')] = globalTaskData[id][t];
             }
             globalTaskData = safeGlobalTaskData;
-
-            // 淨化 historyClean
             let safeHistoryClean = {};
             for(let d in historyClean) {
                 safeHistoryClean[d] = {};
                 for(let id in historyClean[d]) {
                     safeHistoryClean[d][id] = {};
-                    for(let t in historyClean[d][id]) {
-                        safeHistoryClean[d][id][t.replace(/[.#$/\[\]]/g, '_')] = historyClean[d][id][t];
-                    }
+                    for(let t in historyClean[d][id]) safeHistoryClean[d][id][t.replace(/[.#$/\[\]]/g, '_')] = historyClean[d][id][t];
                 }
             }
             historyClean = safeHistoryClean;
-
-            const data = { tasks, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
             
-            db.ref('users/' + currentUser.uid).set(data).catch(err => {
-                console.error("同步失敗:", err);
+            let safeGrades = { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+            ["國語", "數學"].forEach(sub => {
+                if(!grades[sub]) grades[sub] = { exams: [], weights: {}, scores: {} };
+                safeGrades[sub].exams = (grades[sub].exams || []).map(e => e.replace(/[.#$/\[\]]/g, '_'));
+                for(let e in (grades[sub].weights || {})) safeGrades[sub].weights[e.replace(/[.#$/\[\]]/g, '_')] = grades[sub].weights[e];
+                for(let id in (grades[sub].scores || {})) {
+                    safeGrades[sub].scores[id] = {};
+                    for(let e in grades[sub].scores[id]) safeGrades[sub].scores[id][e.replace(/[.#$/\[\]]/g, '_')] = grades[sub].scores[id][e];
+                }
             });
+            grades = safeGrades;
+
+            const data = { tasks, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, grades, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
+            db.ref('users/' + currentUser.uid).set(data).catch(err => console.error("同步失敗:", err));
         }
 
-        function getLocalDateString() {
-            const now = new Date();
-            return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        // 🌟 新增：滑出式抽屜看板控制邏輯 🌟
+        function toggleAnnounceDrawer(show) {
+            const drawer = document.getElementById('announceDrawer');
+            const backdrop = document.getElementById('drawerBackdrop');
+            if (show) {
+                drawer.classList.add('drawer-open');
+                backdrop.classList.add('backdrop-show');
+                document.getElementById('announceDot').classList.add('hidden'); // 看完就消掉紅點
+            } else {
+                drawer.classList.remove('drawer-open');
+                backdrop.classList.remove('backdrop-show');
+            }
         }
+
+        function getLocalDateString() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
         document.getElementById('currentDate').value = getLocalDateString();
 
         setInterval(() => {
@@ -382,60 +413,34 @@
 
         let isReportOpen = true;
         function toggleReport() {
-            const panel = document.getElementById('reportPanel');
-            const grid = document.getElementById('reportGrid');
-            const icon = document.getElementById('reportToggleIcon');
-            const text = document.getElementById('reportToggleText');
+            const panel = document.getElementById('reportPanel'); const grid = document.getElementById('reportGrid');
+            const icon = document.getElementById('reportToggleIcon'); const text = document.getElementById('reportToggleText');
             isReportOpen = !isReportOpen;
-            if (isReportOpen) {
-                panel.classList.replace('report-closed', 'report-open');
-                grid.style.opacity = '1'; icon.innerText = '▼'; text.innerText = '收起總覽面板';
-            } else {
-                panel.classList.replace('report-open', 'report-closed');
-                grid.style.opacity = '0'; icon.innerText = '▲'; text.innerText = '展開總覽面板';
-            }
+            if (isReportOpen) { panel.classList.replace('report-closed', 'report-open'); grid.style.opacity = '1'; icon.innerText = '▼'; text.innerText = '收起總覽面板'; }
+            else { panel.classList.replace('report-open', 'report-closed'); grid.style.opacity = '0'; icon.innerText = '▲'; text.innerText = '展開總覽面板'; }
         }
         if (window.innerHeight < 500 && window.innerWidth > window.innerHeight) { toggleReport(); }
 
         function toggleExamClock() {
-            const overlay = document.getElementById('examClockOverlay');
-            overlay.classList.toggle('hidden'); overlay.classList.toggle('flex');
+            const overlay = document.getElementById('examClockOverlay'); overlay.classList.toggle('hidden'); overlay.classList.toggle('flex');
             if(!overlay.classList.contains('hidden')) document.getElementById('examScheduleInput').value = examScheduleStr;
         }
-
         function saveExamSchedule() { examScheduleStr = document.getElementById('examScheduleInput').value; saveToCloud(); }
-
         function toggleExamZoom(mode) {
-            const left = document.getElementById('examLeft');
-            const right = document.getElementById('examRight');
-            const hugeText = document.getElementById('hugeLiveClock');
-
-            left.className = "clock-panel p-8 flex flex-col relative bg-[#fdfcf9] border-[#d3cabc]";
-            right.className = "clock-panel p-8 flex items-center justify-center relative bg-[#f4f1ea] shadow-inner overflow-hidden";
-            
-            if (mode === 'split') {
-                left.classList.add('w-full', 'md:w-1/3', 'h-1/2', 'md:h-full', 'border-b', 'md:border-b-0', 'md:border-r');
-                right.classList.add('w-full', 'md:w-2/3', 'h-1/2', 'md:h-full');
-                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none";
-            } else if (mode === 'left') {
-                left.classList.add('w-full', 'h-full'); right.classList.add('hidden');
-            } else if (mode === 'right') {
-                left.classList.add('hidden'); right.classList.add('w-full', 'h-full');
-                hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full leading-none";
-            }
+            const left = document.getElementById('examLeft'); const right = document.getElementById('examRight'); const hugeText = document.getElementById('hugeLiveClock');
+            left.className = "clock-panel p-8 flex flex-col relative bg-[#fdfcf9] border-[#d3cabc]"; right.className = "clock-panel p-8 flex items-center justify-center relative bg-[#f4f1ea] shadow-inner overflow-hidden";
+            if (mode === 'split') { left.classList.add('w-full', 'md:w-1/3', 'h-1/2', 'md:h-full', 'border-b', 'md:border-b-0', 'md:border-r'); right.classList.add('w-full', 'md:w-2/3', 'h-1/2', 'md:h-full'); hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none"; }
+            else if (mode === 'left') { left.classList.add('w-full', 'h-full'); right.classList.add('hidden'); }
+            else if (mode === 'right') { left.classList.add('hidden'); right.classList.add('w-full', 'h-full'); hugeText.className = "digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-full leading-none"; }
         }
 
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('loginScreen').style.opacity = '0';
-                setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
-                document.getElementById('mainApp').classList.remove('opacity-0', 'pointer-events-none');
-                startDatabaseSync();
+                document.getElementById('loginScreen').style.opacity = '0'; setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
+                document.getElementById('mainApp').classList.remove('opacity-0', 'pointer-events-none'); startDatabaseSync();
             } else {
-                currentUser = null;
-                document.getElementById('loginScreen').style.display = 'flex';
-                setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
+                currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
                 document.getElementById('mainApp').classList.add('opacity-0', 'pointer-events-none');
             }
         });
@@ -448,15 +453,20 @@
             db.ref('users/' + currentUser.uid).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
+                    // 檢查宣導事項是否有更新，若有且不為空，在手機按鈕亮紅點
+                    if (data.announcements && data.announcements !== announcements && isFirstLoad === false) {
+                        document.getElementById('announceDot').classList.remove('hidden');
+                    }
                     tasks = data.tasks || []; globalTaskData = data.globalTaskData || {};
                     historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || "";
                     cleanTasks = data.cleanTasks || ["潔牙", "掃地"]; historyClean = data.historyClean || {};
+                    grades = data.grades || { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+                    
                     if(data.examSchedule) examScheduleStr = data.examSchedule;
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
                     renderAll(); 
                     if(document.getElementById('examScheduleInput')) document.getElementById('examScheduleInput').value = examScheduleStr;
                 } else if (isFirstLoad) migrateLocalDataToCloud();
-                
                 isFirstLoad = false;
                 const syncIcon = document.getElementById('syncStatus');
                 syncIcon.style.opacity = '0.5'; setTimeout(() => syncIcon.style.opacity = '1', 200);
@@ -464,14 +474,12 @@
         }
 
         function migrateLocalDataToCloud() {
-            const t = localStorage.getItem('v26_tasks') || localStorage.getItem('v25_tasks') || localStorage.getItem('v24_tasks');
+            const t = localStorage.getItem('v28_tasks') || localStorage.getItem('v27_tasks');
             if (t) {
-                tasks = JSON.parse(t); 
-                globalTaskData = JSON.parse(localStorage.getItem('v26_globalTaskData') || localStorage.getItem('v25_globalTaskData') || '{}');
-                historyAtt = JSON.parse(localStorage.getItem('v26_historyAtt') || localStorage.getItem('v25_historyAtt') || '{}'); 
-                dailyNotes = JSON.parse(localStorage.getItem('v26_dailyNotes') || localStorage.getItem('v25_dailyNotes') || '{}');
-                announcements = localStorage.getItem('v26_announcements') || localStorage.getItem('v25_announcements') || '';
-                if(localStorage.getItem('v26_count')) document.getElementById('studentCount').value = localStorage.getItem('v26_count');
+                tasks = JSON.parse(t); globalTaskData = JSON.parse(localStorage.getItem('v28_globalTaskData') || '{}');
+                historyAtt = JSON.parse(localStorage.getItem('v28_historyAtt') || '{}'); dailyNotes = JSON.parse(localStorage.getItem('v28_dailyNotes') || '{}');
+                announcements = localStorage.getItem('v28_announcements') || '';
+                if(localStorage.getItem('v28_count')) document.getElementById('studentCount').value = localStorage.getItem('v28_count');
                 saveToCloud();
             }
         }
@@ -482,20 +490,33 @@
             currentTab = tab;
             document.getElementById('taskView').classList.toggle('hidden', tab !== 'task');
             document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean');
+            document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade');
             document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             
             const inputField = document.getElementById('itemName');
-            if(tab === 'task') inputField.placeholder = "新增作業名稱...";
-            else if(tab === 'clean') inputField.placeholder = "新增檢核項目...";
+            const subjectSwitch = document.getElementById('gradeSubjectSwitch');
             
-            document.getElementById('taskInputGroup').classList.toggle('hidden', tab === 'att'); 
+            if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); }
+            else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); }
+            else if(tab === 'grade') { inputField.placeholder = "新增考試/成績項目..."; subjectSwitch.classList.remove('hidden'); }
+            
+            document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
             
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`;
             document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`;
+            document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active text-[#8a4523]' : 'tab-inactive'}`;
             document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
+            
+            if(tab === 'grade') renderGrades();
+        }
+        
+        function switchGradeSubject(sub) {
+            currentGradeSubject = sub;
+            document.getElementById('btnSubChinese').className = `px-2.5 py-1 rounded-lg font-black text-xs transition ${sub === '國語' ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-500 hover:bg-white/50'}`;
+            document.getElementById('btnSubMath').className = `px-2.5 py-1 rounded-lg font-black text-xs transition ${sub === '數學' ? 'bg-white text-stone-700 shadow-sm' : 'text-stone-500 hover:bg-white/50'}`;
+            renderGrades();
         }
 
-        function toggleFullScreen() { document.getElementById('fullScreenOverlay').classList.toggle('hidden'); document.getElementById('fullScreenOverlay').classList.toggle('flex'); }
         function openAnnounceModal() { document.getElementById('announceTextarea').value = announcements; document.getElementById('announceModal').classList.replace('hidden', 'flex'); }
         function closeAnnounceModal() { document.getElementById('announceModal').classList.replace('flex', 'hidden'); }
         function saveAnnounce() { announcements = document.getElementById('announceTextarea').value.trim(); saveToCloud(); closeAnnounceModal(); }
@@ -514,6 +535,67 @@
             saveToCloud(); closeNoteModal();
         }
 
+        function renderGrades() {
+            if(!grades[currentGradeSubject]) grades[currentGradeSubject] = { exams: [], weights: {}, scores: {} };
+            const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
+            let gHead = `<tr><th class="sticky-cross min-w-[80px] text-center text-lg font-black">座號</th>`;
+            subData.exams.forEach((exam, index) => {
+                const w = subData.weights[exam] || 1;
+                gHead += `<th class="min-w-[120px] text-center px-4">
+                    <div class="font-black text-[#8a4523] text-lg mb-1">${exam}</div>
+                    <div class="flex items-center justify-center gap-1 mb-2">
+                        <span class="text-xs font-bold">權重:</span>
+                        <input type="number" class="weight-input" value="${w}" onchange="updateWeight('${exam}', this.value)" min="0" step="0.1">
+                    </div>
+                    <div class="flex gap-1 justify-center">
+                        <button onclick="linearAdjust('${exam}')" class="text-xs bg-[#dfa888] text-white px-2 py-1 rounded hover:bg-[#c99070] shadow-sm">🪄 調分</button>
+                        <button onclick="deleteExam(${index})" class="text-xs bg-[#e3a8a8] text-[#6e2727] px-2 py-1 rounded hover:bg-[#d69595] shadow-sm">✕</button>
+                    </div>
+                </th>`;
+            });
+            gHead += `<th class="min-w-[100px] text-center bg-[#e8e2d5] text-[#6b6356] font-black text-xl border-l-2 border-white">加權平均</th></tr>`;
+            document.getElementById('gradeHeader').innerHTML = gHead;
+
+            let gBody = '';
+            for(let i=1; i<=count; i++) {
+                let rowHtml = `<tr><td class="sticky-left p-3 text-center font-black text-2xl border-b border-white/50 bg-white/30">${i}</td>`;
+                let totalScore = 0; let totalWeight = 0;
+                subData.exams.forEach(exam => {
+                    const val = subData.scores[i]?.[exam] !== undefined ? subData.scores[i][exam] : "";
+                    rowHtml += `<td class="p-2 border-b border-white/50 text-center"><input type="number" class="grade-input" value="${val}" onchange="updateScore(${i}, '${exam}', this.value)" placeholder="-"></td>`;
+                    const w = Number(subData.weights[exam]) || 1;
+                    if(val !== "") { totalScore += Number(val) * w; totalWeight += w; }
+                });
+                let avg = totalWeight > 0 ? (totalScore / totalWeight).toFixed(1) : "-";
+                rowHtml += `<td class="p-3 border-b border-white/50 text-center font-black text-2xl text-[#8a4523] bg-[#f4f1ea] border-l-2 border-white">${avg}</td></tr>`;
+                gBody += rowHtml;
+            }
+            document.getElementById('gradeBody').innerHTML = gBody;
+        }
+
+        function updateWeight(exam, val) { grades[currentGradeSubject].weights[exam] = val; saveToCloud(); }
+        function updateScore(studentId, exam, val) { if(!grades[currentGradeSubject].scores[studentId]) grades[currentGradeSubject].scores[studentId] = {}; grades[currentGradeSubject].scores[studentId][exam] = val; saveToCloud(); }
+        function deleteExam(index) { if(confirm('確定刪除這個成績項目？')) { grades[currentGradeSubject].exams.splice(index, 1); saveToCloud(); } }
+
+        function linearAdjust(examName) {
+            const count = parseInt(document.getElementById('studentCount').value) || 0; const subData = grades[currentGradeSubject]; let validScores = [];
+            for(let i=1; i<=count; i++) { const s = subData.scores[i]?.[examName]; if(s !== undefined && s !== null && s !== "") validScores.push(Number(s)); }
+            if(validScores.length === 0) return alert("目前還沒有輸入任何成績喔！");
+            const max = Math.max(...validScores); const min = Math.min(...validScores);
+            if(max === min) return alert("全班分數都一樣，無法使用線性調分公式！");
+            if(confirm(`線性調分：\n最低分(${min}分) ⇨ 60分\n最高分(${max}分) ⇨ 97分\n\n確定執行？`)) {
+                for(let i=1; i<=count; i++) {
+                    const s = subData.scores[i]?.[examName];
+                    if(s !== undefined && s !== null && s !== "") {
+                        let raw = Number(s);
+                        let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60);
+                        subData.scores[i][examName] = Math.min(100, Math.max(0, adj)); // 安全防禦鎖
+                    }
+                }
+                saveToCloud();
+            }
+        }
+
         function renderAll() {
             const date = document.getElementById('currentDate').value;
             const count = parseInt(document.getElementById('studentCount').value) || 0;
@@ -521,12 +603,19 @@
             if (!historyAtt[date]) historyAtt[date] = {}; const todaysAtt = historyAtt[date];
             if (!historyClean[date]) historyClean[date] = {}; const todaysClean = historyClean[date];
 
-            const aBoard = document.getElementById('announceBoard'); const aList = document.getElementById('announceList');
+            // 🌟 升級：側邊滑出式看板渲染 🌟
+            const aList = document.getElementById('announceList');
+            const emptyText = document.getElementById('emptyAnnounceText');
             const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
+            
             if (announcements) {
-                const lis = announcements.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('');
-                aBoard.classList.remove('hidden'); aList.innerHTML = lis; fsCard.classList.remove('hidden'); fsList.innerHTML = lis;
-            } else { aBoard.classList.add('hidden'); fsCard.classList.add('hidden'); }
+                const lis = announcements.split('\n').filter(l => l.trim()).map(l => `<li class="border-b border-stone-200/50 pb-2 last:border-0">${l}</li>`).join('');
+                aList.innerHTML = lis; emptyText.classList.add('hidden');
+                if(fsCard) { fsCard.classList.remove('hidden'); fsList.innerHTML = lis; }
+            } else {
+                aList.innerHTML = ''; emptyText.classList.remove('hidden');
+                if(fsCard) fsCard.classList.add('hidden');
+            }
 
             let studentsHeader = '';
             for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`;
@@ -579,20 +668,21 @@
                 cBody.innerHTML += row + '</tr>';
             });
 
-            // 出勤
+            // 出勤矩陣
             const aBody = document.getElementById('attendanceBody');
             document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
-            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
+            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-bold text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
                 attRow += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`;
             }
             aBody.innerHTML = attRow + '</tr>';
 
+            if(currentTab === 'grade') renderGrades();
+
             // 報表
             const tReport = document.getElementById('taskReport'); const fsReport = document.getElementById('fsTaskReport'); const aReport = document.getElementById('attReport');
-            tReport.innerHTML = ''; fsReport.innerHTML = ''; aReport.innerHTML = '';
-            let hasUnfinished = false;
+            tReport.innerHTML = ''; fsReport.innerHTML = ''; aReport.innerHTML = ''; let hasUnfinished = false;
             
             tasks.forEach(t => {
                 let missing = []; let correction = []; 
@@ -617,7 +707,6 @@
             });
 
             if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-black text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
-
             let atts = [];
             for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border-2 border-white px-3 py-1 rounded-lg font-black text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
@@ -625,20 +714,13 @@
             initSortable();
         }
 
-        // 🌟 新增防呆：輸入文字時的自動取代 🌟
         function addItem() { 
-            let val = document.getElementById('itemName').value.trim(); 
-            if (!val) return;
-            
-            if(/[.#$/\[\]]/.test(val)) {
-                alert("⚠️ 為了配合雲端系統，名稱不能包含 . # $ / [ ] 等符號，已自動幫您替換為底線 '_'！");
-                val = val.replace(/[.#$/\[\]]/g, '_');
-            }
-
+            let val = document.getElementById('itemName').value.trim(); if (!val) return;
+            if(/[.#$/\[\]]/.test(val)) { alert("⚠️ 名稱不能包含 . # $ / [ ] 等特殊符號，已自動替換！"); val = val.replace(/[.#$/\[\]]/g, '_'); }
             if(currentTab === 'task') { if(!tasks.includes(val)) { tasks.push(val); } }
             else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } }
-            document.getElementById('itemName').value = ''; 
-            saveToCloud(); 
+            else if(currentTab === 'grade') { if(!grades[currentGradeSubject].exams.includes(val)) { grades[currentGradeSubject].exams.push(val); grades[currentGradeSubject].weights[val] = 1; } }
+            document.getElementById('itemName').value = ''; saveToCloud(); 
         }
         
         function cycleTask(id, t) { if(!globalTaskData[id]) globalTaskData[id]={}; globalTaskData[id][t] = ((globalTaskData[id][t]||0)+1)%3; saveToCloud(); }
@@ -651,18 +733,11 @@
             }
         }
 
-        function cycleClean(id, t) {
-            const d = document.getElementById('currentDate').value;
-            if(!historyClean[d]) historyClean[d] = {};
-            if(!historyClean[d][id]) historyClean[d][id] = {};
-            historyClean[d][id][t] = ((historyClean[d][id][t]||0)+1)%2; 
-            saveToCloud();
-        }
+        function cycleClean(id, t) { const d = document.getElementById('currentDate').value; if(!historyClean[d]) historyClean[d] = {}; if(!historyClean[d][id]) historyClean[d][id] = {}; historyClean[d][id][t] = ((historyClean[d][id][t]||0)+1)%2; saveToCloud(); }
         function deleteCleanTask(i) { if(confirm('確定移除此檢核項目？')) { cleanTasks.splice(i, 1); saveToCloud(); } }
         function completeAllClean(taskName) {
             if(confirm(`確定將本日【${taskName}】設為全班過關？`)) {
-                const count = parseInt(document.getElementById('studentCount').value) || 0;
-                const d = document.getElementById('currentDate').value;
+                const count = parseInt(document.getElementById('studentCount').value) || 0; const d = document.getElementById('currentDate').value;
                 if(!historyClean[d]) historyClean[d] = {};
                 for(let i = 1; i <= count; i++) { if(!historyClean[d][i]) historyClean[d][i] = {}; historyClean[d][i][taskName] = 1; }
                 saveToCloud();
@@ -671,58 +746,58 @@
 
         function cycleAttendance(id) { const d = document.getElementById('currentDate').value; if(!historyAtt[d]) historyAtt[d] = {}; historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveToCloud(); }
 
+        // 🌟 完美的試算表分類導出 🌟
         function exportExcel() {
-            const count = parseInt(document.getElementById('studentCount').value);
-            const wb = XLSX.utils.book_new();
-
+            const count = parseInt(document.getElementById('studentCount').value); const wb = XLSX.utils.book_new();
+            
+            // 1. 作業
             let taskRows = [];
             for (let i = 1; i <= count; i++) {
-                let row = { '座號': i };
-                tasks.forEach(t => row[t] = ["未交", "待訂正", "已完成"][(globalTaskData[i] && globalTaskData[i][t]) || 0]);
-                taskRows.push(row);
+                let row = { '座號': i }; tasks.forEach(t => row[t] = ["未交", "待訂正", "已完成"][(globalTaskData[i] && globalTaskData[i][t]) || 0]); taskRows.push(row);
             }
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
 
-            let attRows = [];
-            const allDates = Object.keys(historyAtt).sort();
+            // 2. 出缺勤
+            let attRows = []; const allDates = Object.keys(historyAtt).sort();
             for (let i = 1; i <= count; i++) {
-                let row = { '座號': i };
-                let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; 
-                allDates.forEach(d => {
-                    const s = historyAtt[d][i] || 0;
-                    row[d] = attLabels[s];
-                    if(s > 0) stats[s]++;
-                });
-                row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3];
-                row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5];
+                let row = { '座號': i }; let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; 
+                allDates.forEach(d => { const s = historyAtt[d][i] || 0; row[d] = attLabels[s]; if(s > 0) stats[s]++; });
+                row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3]; row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5];
                 attRows.push(row);
             }
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤學期總表");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤總表");
 
-            let cleanRows = [];
+            // 3. 🌟 潔牙與打掃徹底拆分到獨立工作表 🌟
             const cleanDates = Object.keys(historyClean).sort();
-            for (let i = 1; i <= count; i++) {
-                let row = { '座號': i };
-                cleanDates.forEach(d => {
-                    cleanTasks.forEach(t => {
-                        const s = (historyClean[d][i] && historyClean[d][i][t]) || 0;
-                        row[`${d}_${t}`] = s === 1 ? "完成" : "未完成";
-                    });
-                });
-                cleanRows.push(row);
-            }
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), "日常檢核表");
-
-            let noteRows = [];
-            Object.keys(dailyNotes).sort().forEach(d => {
-                if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] });
+            cleanTasks.forEach(taskName => {
+                let cleanRows = [];
+                for (let i = 1; i <= count; i++) {
+                    let row = { '座號': i };
+                    cleanDates.forEach(d => { const s = (historyClean[d][i] && historyClean[d][i][taskName]) || 0; row[d] = s === 1 ? "完成" : "未完成"; });
+                    cleanRows.push(row);
+                }
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`);
             });
-            if (noteRows.length > 0) {
-                const wsNotes = XLSX.utils.json_to_sheet(noteRows);
-                wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; 
-                XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本");
-            }
-            XLSX.writeFile(wb, `班級總表_${getLocalDateString()}.xlsx`);
+
+            // 4. 成績
+            ["國語", "數學"].forEach(subject => {
+                let gradeRows = []; const subData = grades[subject] || { exams: [], weights: {}, scores: {} };
+                for(let i=1; i<=count; i++) {
+                    let row = { '座號': i }; let totalScore = 0; let totalWeight = 0;
+                    subData.exams.forEach(exam => {
+                        const val = subData.scores[i]?.[exam]; row[exam] = val !== undefined ? val : "";
+                        const w = Number(subData.weights[exam]) || 1; if(val !== undefined && val !== "") { totalScore += Number(val) * w; totalWeight += w; }
+                    });
+                    row['加權平均'] = totalWeight > 0 ? (totalScore / totalWeight).toFixed(1) : ""; gradeRows.push(row);
+                }
+                if(subData.exams.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), `${subject}期末成績`);
+            });
+
+            // 5. 記事本
+            let noteRows = []; Object.keys(dailyNotes).sort().forEach(d => { if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] }); });
+            if (noteRows.length > 0) { const wsNotes = XLSX.utils.json_to_sheet(noteRows); wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本"); }
+            
+            XLSX.writeFile(wb, `班級雲端總表_${getLocalDateString()}.xlsx`);
         }
     </script>
 </body>
