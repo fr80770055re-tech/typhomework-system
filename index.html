@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v30 - 穩定防崩與快打版</title>
+    <title>班級管理系統 v31 - 游標鎖定快打版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-    <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -136,7 +134,6 @@
         </div>
     </div>
 
-    <!-- 宣導抽屜 -->
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="toggleAnnounceDrawer(false)"></div>
     <div id="announceDrawer" class="drawer-panel p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6 border-b border-stone-200 pb-3 shrink-0">
@@ -230,7 +227,6 @@
         </div>
     </div>
 
-    <!-- 考試大鐘 -->
     <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500 font-black">
         <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
             <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
@@ -258,7 +254,6 @@
         </div>
     </div>
 
-    <!-- 全螢幕投影 Modal -->
     <div id="fullScreenOverlay" class="fixed inset-0 z-40 bg-[#f0ebe1]/95 backdrop-blur-xl hidden flex-col font-black">
         <div class="p-6 bg-[#4a4a48]/90 backdrop-blur-md text-white flex justify-between items-center shadow-lg shrink-0 border-b border-white/20">
             <h1 class="text-3xl md:text-4xl font-black tracking-widest text-stone-100">今日任務總覽 <span id="fsClock" class="ml-4 text-2xl font-mono opacity-80"></span></h1>
@@ -276,7 +271,6 @@
         </div>
     </div>
 
-    <!-- Modal 彈窗群 -->
     <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -330,6 +324,9 @@
 
         let taskSortable = null; let cleanSortable = null;
 
+        // 🌟 核心防護變數：記錄即將被跳轉的輸入框 🌟
+        let pendingNextFocus = null;
+
         function initSortable() {
             const opts = { animation: 200, handle: '.drag-handle', filter: 'button, .state-btn, input, textarea', preventOnFilter: false, delay: 150, delayOnTouchOnly: true, ghostClass: 'sortable-ghost' };
             if(taskSortable) taskSortable.destroy();
@@ -346,7 +343,6 @@
             }
         }
 
-        // 🌟 防呆寫入：過濾特殊字元，保護雲端結構 🌟
         function saveToCloud() {
             if(!currentUser) return;
             tasks = (tasks || []).map(t => t.replace(/[.#$/\[\]]/g, '_'));
@@ -444,13 +440,12 @@
                 if (data) {
                     if (data.announcements && data.announcements !== announcements && isFirstLoad === false) { document.getElementById('announceDot').classList.remove('hidden'); }
                     
-                    // 🌟 核心防護：避免 Firebase 吃掉空陣列導致崩潰 🌟
                     tasks = data.tasks || []; 
                     globalTaskData = data.globalTaskData || {};
                     historyAtt = data.historyAtt || {}; 
                     dailyNotes = data.dailyNotes || {}; 
                     announcements = data.announcements || "";
-                    cleanTasks = data.cleanTasks || []; // 放棄強制塞入預設值，完全尊重使用者的刪除
+                    cleanTasks = data.cleanTasks || [];
                     historyClean = data.historyClean || {};
                     
                     grades = data.grades || {};
@@ -472,10 +467,7 @@
             });
         }
 
-        function migrateLocalDataToCloud() {
-            // 從 LocalStorage 載入遺產並確保資料結構安全
-            saveToCloud();
-        }
+        function migrateLocalDataToCloud() { saveToCloud(); }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -526,16 +518,21 @@
             saveToCloud(); closeNoteModal();
         }
 
-        // 🌟 新增：Enter 跳轉下一個輸入框功能 🌟
+        // 🌟 核心防護：處理 Enter 鍵換行，並觸發存檔 🌟
         function handleGradeEnter(e, currentSid, examName) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // 防止送出或其他預設行為
-                // 尋找同一個考試、座號加一的那個輸入框
-                const nextInput = document.querySelector(`.grade-input[data-exam="${examName}"][data-sid="${currentSid + 1}"]`);
-                if (nextInput) {
-                    nextInput.focus();
-                    nextInput.select(); // 自動全選裡面的數字，方便直接覆蓋打新分數
-                }
+                e.preventDefault();
+                pendingNextFocus = { sid: currentSid + 1, exam: examName };
+                e.target.blur(); // 強制觸發 blur，如果數值有變就會引發 onchange -> 存檔 -> 重繪
+                
+                // 防呆：如果數值沒變，就不會觸發重繪，我們必須手動把游標跳過去
+                setTimeout(() => {
+                    if (pendingNextFocus) {
+                        let nextInput = document.querySelector(`.grade-input[data-exam="${pendingNextFocus.exam}"][data-sid="${pendingNextFocus.sid}"]`);
+                        if(nextInput) { nextInput.focus(); nextInput.select(); }
+                        pendingNextFocus = null;
+                    }
+                }, 50);
             }
         }
 
@@ -549,7 +546,7 @@
                     <div class="font-black text-[#8a4523] text-lg mb-1">${exam}</div>
                     <div class="flex items-center justify-center gap-1 mb-2">
                         <span class="text-xs font-bold">權重:</span>
-                        <input type="number" class="weight-input" value="${w}" onchange="updateWeight('${exam}', this.value)" min="0" step="0.1">
+                        <input type="number" class="weight-input" data-weight-exam="${exam}" value="${w}" onchange="updateWeight('${exam}', this.value)" min="0" step="0.1">
                     </div>
                     <div class="flex gap-1 justify-center">
                         <button onclick="linearAdjust('${exam}')" class="text-xs bg-[#dfa888] text-white px-2 py-1 rounded hover:bg-[#c99070] shadow-sm">🪄 調分</button>
@@ -603,6 +600,17 @@
         }
 
         function renderAll() {
+            // 🌟 核心防護：在畫面重繪前，記下當前正在打字的格子 🌟
+            let currentFocus = null;
+            let activeEl = document.activeElement;
+            if (activeEl) {
+                if (activeEl.classList.contains('grade-input')) {
+                    currentFocus = { type: 'grade', sid: activeEl.dataset.sid, exam: activeEl.dataset.exam };
+                } else if (activeEl.classList.contains('weight-input')) {
+                    currentFocus = { type: 'weight', exam: activeEl.dataset.weightExam };
+                }
+            }
+
             const date = document.getElementById('currentDate').value;
             const count = parseInt(document.getElementById('studentCount').value) || 0;
             
@@ -675,7 +683,7 @@
             // 出勤矩陣
             const aBody = document.getElementById('attendanceBody');
             document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
-            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-bold text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
+            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
                 attRow += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`;
@@ -716,6 +724,22 @@
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
 
             initSortable();
+
+            // 🌟 核心防護：把剛剛記下來的游標，重新插回重繪後的新表格 🌟
+            if (pendingNextFocus) {
+                let nextInput = document.querySelector(`.grade-input[data-exam="${pendingNextFocus.exam}"][data-sid="${pendingNextFocus.sid}"]`);
+                if(nextInput) { nextInput.focus(); nextInput.select(); }
+                pendingNextFocus = null; // 跳轉完成，清空任務
+            } else if (currentFocus) {
+                if (currentFocus.type === 'grade') {
+                    let el = document.querySelector(`.grade-input[data-exam="${currentFocus.exam}"][data-sid="${currentFocus.sid}"]`);
+                    // 只有在游標真的不見時才幫他找回來
+                    if(el && document.activeElement !== el) { el.focus(); }
+                } else if (currentFocus.type === 'weight') {
+                    let el = document.querySelector(`.weight-input[data-weight-exam="${currentFocus.exam}"]`);
+                    if(el && document.activeElement !== el) { el.focus(); }
+                }
+            }
         }
 
         function addItem() { 
