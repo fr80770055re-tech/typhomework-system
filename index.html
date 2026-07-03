@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v31 - 游標鎖定快打版</title>
+    <title>班級管理系統 v32 - 雲端多階成績版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
+    <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -39,7 +41,7 @@
         ::-webkit-scrollbar-thumb { background: rgba(187, 174, 160, 0.6); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
 
         .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; width: 100%; }
-        .scroll-section { flex: 1; overflow: auto; background: transparent; }
+        .scroll-section { flex: 1; overflow: auto; background: transparent; padding-bottom: 150px; }
         
         .state-btn {
             width: 100%; min-width: 62px; height: 55px; border-radius: 18px; 
@@ -67,58 +69,36 @@
         .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 6px; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
 
         table { border-collapse: separate; border-spacing: 0; }
-        th { background: rgba(240, 235, 225, 0.9); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 12px 6px; white-space: nowrap; }
+        th { background: rgba(240, 235, 225, 0.9); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 10px 4px; white-space: nowrap; }
         th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; }
-        .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.9); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
-        th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
+        .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); }
+        th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 1); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
 
         .tab-btn { flex: 1; padding: 12px 0; font-weight: 900; font-size: 1.05em; transition: 0.2s; border-radius: 18px 18px 0 0; min-width: 85px; white-space: nowrap; }
         .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 5px solid #9aa5b1; }
         .tab-inactive { background-color: rgba(255,255,255,0.2); color: #a39b8e; }
 
-        .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 0 15px 15px 15px; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 0 15px 15px 15px; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; position: absolute; bottom: 0; left: 0; right: 0; z-index: 40; }
         .report-open { height: 35%; min-height: 250px; }
         .report-closed { height: 30px; overflow: hidden; padding-bottom: 0; }
         
-        .drawer-panel {
-            position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100vh;
-            z-index: 90; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(20px);
-            border-left: 2px solid rgba(255,255,255,0.8); box-shadow: -10px 0 30px rgba(0,0,0,0.08);
-        }
+        .drawer-panel { position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100vh; z-index: 90; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(20px); border-left: 2px solid rgba(255,255,255,0.8); box-shadow: -10px 0 30px rgba(0,0,0,0.08); }
         .drawer-open { right: 0 !important; }
         .drawer-backdrop { position: fixed; inset: 0; bg: black/20; z-index: 80; backdrop-blur: sm; transition: opacity 0.3s; opacity: 0; pointer-events: none; }
         .backdrop-show { opacity: 1 !important; pointer-events: auto !important; background-color: rgba(0,0,0,0.15); backdrop-filter: blur(4px); }
 
-        @media (max-height: 500px) and (orientation: landscape) {
-            .glass-header { padding-top: 4px; padding-bottom: 4px; }
-            .control-bar { padding: 4px 8px; }
-            .state-btn { height: 45px; font-size: 1rem; }
-            .tab-btn { padding: 6px 0; font-size: 0.9rem; }
-        }
-
         .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: -0.01em; } 
         .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        @media (min-width: 768px) {
-            .clock-split { font-size: min(9vw, 35vh); line-height: 1; }
-            .clock-full { font-size: min(13vw, 45vh); line-height: 1; }
-        }
-        @media (max-width: 767px) {
-            .clock-split { font-size: min(13vw, 22vh); line-height: 1; }
-            .clock-full { font-size: min(14vw, 35vh); line-height: 1; }
-        }
+        @media (min-width: 768px) { .clock-split { font-size: min(9vw, 35vh); line-height: 1; } .clock-full { font-size: min(13vw, 45vh); line-height: 1; } }
+        @media (max-width: 767px) { .clock-split { font-size: min(13vw, 22vh); line-height: 1; } .clock-full { font-size: min(14vw, 35vh); line-height: 1; } }
 
         .sortable-ghost { opacity: 0.4; background-color: rgba(223, 168, 136, 0.3); }
         .drag-handle { cursor: grab; transition: 0.2s; padding: 4px; }
         .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
 
-        .grade-input {
-            width: 70px; text-align: center; font-weight: 900; font-size: 1.2em; 
-            padding: 8px 4px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.8); 
-            background: rgba(255,255,255,0.5); outline: none; transition: 0.2s; color: #6b6356;
-        }
+        .grade-input { width: 60px; text-align: center; font-weight: 900; font-size: 1.1em; padding: 6px 2px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; transition: 0.2s; color: #6b6356; }
         .grade-input:focus { border-color: #9aa5b1; background: white; box-shadow: 0 0 10px rgba(154,165,177,0.3); }
-        .weight-input { width: 45px; text-align: center; font-weight: 900; font-size: 0.9em; padding: 2px; border-radius: 8px; border: 1px solid rgba(200,200,200,0.8); background: rgba(255,255,255,0.8); outline: none; }
+        .weight-input { width: 40px; text-align: center; font-weight: 900; font-size: 0.85em; padding: 1px; border-radius: 6px; border: 1px solid rgba(200,200,200,0.8); background: rgba(255,255,255,0.8); outline: none; }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -128,18 +108,14 @@
             <div class="text-6xl mb-6">☁️</div>
             <h1 class="text-3xl font-black text-stone-800 mb-2">Class Admin</h1>
             <p class="text-stone-500 font-medium mb-8">請登入以存取您的專屬雲端資料庫</p>
-            <button onclick="loginWithGoogle()" class="w-full bg-white text-stone-700 px-6 py-4 rounded-2xl font-black text-lg shadow-md hover:bg-stone-50 transition border border-stone-200">
-                使用 Google 安全登入
-            </button>
+            <button onclick="loginWithGoogle()" class="w-full bg-white text-stone-700 px-6 py-4 rounded-2xl font-black text-lg shadow-md hover:bg-stone-50 transition border border-stone-200">使用 Google 安全登入</button>
         </div>
     </div>
 
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="toggleAnnounceDrawer(false)"></div>
     <div id="announceDrawer" class="drawer-panel p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6 border-b border-stone-200 pb-3 shrink-0">
-            <h2 class="text-xl font-black text-[#8a4523] flex items-center gap-2">
-                <span>📣</span> 班級即時宣導看板
-            </h2>
+            <h2 class="text-xl font-black text-[#8a4523] flex items-center gap-2"><span>📣</span> 班級宣導看板</h2>
             <button onclick="toggleAnnounceDrawer(false)" class="text-stone-400 hover:text-red-500 font-black text-2xl transition p-2">✕</button>
         </div>
         <div class="flex-1 overflow-y-auto pr-1">
@@ -151,7 +127,7 @@
         </div>
     </div>
 
-    <div id="mainApp" class="main-container glass-panel sm:rounded-[2.5rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500">
+    <div id="mainApp" class="main-container glass-panel sm:rounded-[2.5rem] shadow-2xl opacity-0 pointer-events-none transition-opacity duration-500 relative">
         
         <div class="px-6 py-3 glass-header text-stone-100 flex flex-wrap justify-between items-center shrink-0 sm:rounded-t-[2.5rem]">
             <h1 class="font-black text-xl md:text-2xl tracking-wide flex items-center gap-2">
@@ -180,6 +156,8 @@
                 </div>
                 <button onclick="toggleAnnounceDrawer(true)" id="btnDrawerTrigger" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#c99070] shadow-sm transition relative">📣 宣導 <span id="announceDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span></button>
                 <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
+                <!-- 🌟 隱藏全過關按鈕 🌟 -->
+                <button onclick="toggleHidePerfect()" id="btnHidePerfect" class="bg-white/60 text-stone-600 px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-white shadow-sm transition border border-white/80">👁️ 隱藏全過關</button>
             </div>
             
             <div id="dynamicInputGroup" class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0 transition-all">
@@ -188,14 +166,14 @@
                     <button onclick="switchGradeSubject('數學')" id="btnSubMath" class="px-2.5 py-1 rounded-lg font-black text-xs text-stone-500 hover:bg-white/50 transition">數學</button>
                 </div>
                 <input type="text" id="itemName" placeholder="新增名稱..." class="flex-1 sm:w-40 p-1.5 px-3 border border-white/80 rounded-xl font-black outline-none focus:border-stone-400 bg-white/60 shadow-sm text-sm">
-                <button onclick="addItem()" class="bg-[#6b6356] text-white px-4 py-1.5 rounded-xl font-black text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
+                <button onclick="addItem()" id="btnAddItem" class="bg-[#6b6356] text-white px-4 py-1.5 rounded-xl font-black text-sm hover:bg-[#524c42] shadow-sm transition border border-white/20">新增</button>
             </div>
         </div>
 
         <div class="flex shrink-0 px-2 pt-2 gap-1 bg-white/10 overflow-x-auto">
             <button id="btnTaskTab" onclick="switchTab('task')" class="tab-btn tab-active">📋 作業進度</button>
             <button id="btnCleanTab" onclick="switchTab('clean')" class="tab-btn tab-inactive border-l border-white/30">🧹 潔牙掃地</button>
-            <button id="btnGradeTab" onclick="switchTab('grade')" class="tab-btn tab-inactive border-l border-white/30 text-[#8a4523]">📊 成績登打</button>
+            <button id="btnGradeTab" onclick="switchTab('grade')" class="tab-btn tab-inactive border-l border-white/30 text-[#8a4523]">📊 樹狀成績</button>
             <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive border-l border-white/30">📅 出缺勤</button>
         </div>
 
@@ -210,7 +188,6 @@
                     <span id="reportToggleIcon">▼</span> <span id="reportToggleText">收起總覽面板</span>
                 </button>
             </div>
-            
             <div id="reportGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden transition-opacity duration-300">
                 <div class="bg-white/60 p-4 rounded-2xl border border-white flex flex-col shadow-sm h-full">
                     <button onclick="toggleFullScreen()" class="report-title w-full text-left flex justify-between items-center hover:bg-white/50 p-1.5 -ml-1.5 -mt-1.5 rounded-xl transition group">
@@ -227,29 +204,24 @@
         </div>
     </div>
 
+    <!-- 考試大鐘與 Modal (省略重複部分，保持原有) -->
     <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500 font-black">
         <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
-            <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3">
-                <span>⏱️</span> 考場電子看板
-            </h1>
+            <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3"><span>⏱️</span> 考場電子看板</h1>
             <div class="flex gap-3 md:gap-4">
                 <button onclick="toggleExamZoom('split')" class="text-sm md:text-base bg-[#9aa5b1] text-white hover:bg-[#7b8794] px-4 md:px-5 py-2.5 rounded-xl font-black transition shadow-sm">並排顯示</button>
                 <button onclick="toggleExamClock()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-[#6e2727] px-5 md:px-7 py-2.5 rounded-xl text-base md:text-lg font-black shadow-md transition border border-[#d69595]">退出看板</button>
             </div>
         </div>
-        
         <div id="examContainer" class="flex flex-1 overflow-hidden flex-col md:flex-row bg-[#fdfcf9]">
             <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-8 flex flex-col relative">
                 <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
                 <h2 class="text-2xl md:text-3xl font-black text-[#6b6356] mb-5 tracking-wide">📝 考科與時間</h2>
                 <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400"></textarea>
             </div>
-            
             <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-8 flex items-center justify-center relative shadow-inner overflow-hidden">
                 <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
-                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none">
-                    00:00:00
-                </div>
+                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none">00:00:00</div>
             </div>
         </div>
     </div>
@@ -317,15 +289,15 @@
         let examScheduleStr = "08:40 - 09:20 國語\n09:30 - 10:10 數學";
 
         let currentGradeSubject = '國語';
-        let grades = { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+        // 🌟 v32 全新成績結構：支援大項目與小項目 🌟
+        let grades = { "國語": { categories: [], scores: {} }, "數學": { categories: [], scores: {} } };
 
         let currentTab = 'task';
         const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
+        let isHidePerfect = false;
 
         let taskSortable = null; let cleanSortable = null;
-
-        // 🌟 核心防護變數：記錄即將被跳轉的輸入框 🌟
-        let pendingNextFocus = null;
+        let pendingNextFocusIndex = null; // 橫向跳轉追蹤
 
         function initSortable() {
             const opts = { animation: 200, handle: '.drag-handle', filter: 'button, .state-btn, input, textarea', preventOnFilter: false, delay: 150, delayOnTouchOnly: true, ghostClass: 'sortable-ghost' };
@@ -349,30 +321,25 @@
             cleanTasks = (cleanTasks || []).map(t => t.replace(/[.#$/\[\]]/g, '_'));
             
             let safeGlobalTaskData = {};
-            for(let id in globalTaskData) {
-                safeGlobalTaskData[id] = {};
-                for(let t in globalTaskData[id]) safeGlobalTaskData[id][t.replace(/[.#$/\[\]]/g, '_')] = globalTaskData[id][t];
-            }
+            for(let id in globalTaskData) { safeGlobalTaskData[id] = {}; for(let t in globalTaskData[id]) safeGlobalTaskData[id][t.replace(/[.#$/\[\]]/g, '_')] = globalTaskData[id][t]; }
             globalTaskData = safeGlobalTaskData;
             
             let safeHistoryClean = {};
-            for(let d in historyClean) {
-                safeHistoryClean[d] = {};
-                for(let id in historyClean[d]) {
-                    safeHistoryClean[d][id] = {};
-                    for(let t in historyClean[d][id]) safeHistoryClean[d][id][t.replace(/[.#$/\[\]]/g, '_')] = historyClean[d][id][t];
-                }
-            }
+            for(let d in historyClean) { safeHistoryClean[d] = {}; for(let id in historyClean[d]) { safeHistoryClean[d][id] = {}; for(let t in historyClean[d][id]) safeHistoryClean[d][id][t.replace(/[.#$/\[\]]/g, '_')] = historyClean[d][id][t]; } }
             historyClean = safeHistoryClean;
             
-            let safeGrades = { "國語": { exams: [], weights: {}, scores: {} }, "數學": { exams: [], weights: {}, scores: {} } };
+            let safeGrades = { "國語": { categories: [], scores: {} }, "數學": { categories: [], scores: {} } };
             ["國語", "數學"].forEach(sub => {
-                if(!grades[sub]) grades[sub] = { exams: [], weights: {}, scores: {} };
-                safeGrades[sub].exams = (grades[sub].exams || []).map(e => e.replace(/[.#$/\[\]]/g, '_'));
-                for(let e in (grades[sub].weights || {})) safeGrades[sub].weights[e.replace(/[.#$/\[\]]/g, '_')] = grades[sub].weights[e];
-                for(let id in (grades[sub].scores || {})) {
-                    safeGrades[sub].scores[id] = {};
-                    for(let e in grades[sub].scores[id]) safeGrades[sub].scores[id][e.replace(/[.#$/\[\]]/g, '_')] = grades[sub].scores[id][e];
+                if(grades[sub]) {
+                    safeGrades[sub].categories = (grades[sub].categories || []).map(cat => ({
+                        name: cat.name.replace(/[.#$/\[\]]/g, '_'),
+                        weight: cat.weight,
+                        exams: (cat.exams || []).map(ex => ({ name: ex.name.replace(/[.#$/\[\]]/g, '_'), weight: ex.weight }))
+                    }));
+                    for(let id in (grades[sub].scores || {})) {
+                        safeGrades[sub].scores[id] = {};
+                        for(let key in grades[sub].scores[id]) safeGrades[sub].scores[id][key.replace(/[.#$/\[\]]/g, '_')] = grades[sub].scores[id][key];
+                    }
                 }
             });
             grades = safeGrades;
@@ -385,6 +352,14 @@
             const drawer = document.getElementById('announceDrawer'); const backdrop = document.getElementById('drawerBackdrop');
             if (show) { drawer.classList.add('drawer-open'); backdrop.classList.add('backdrop-show'); document.getElementById('announceDot').classList.add('hidden'); }
             else { drawer.classList.remove('drawer-open'); backdrop.classList.remove('backdrop-show'); }
+        }
+
+        function toggleHidePerfect() {
+            isHidePerfect = !isHidePerfect;
+            document.getElementById('btnHidePerfect').innerText = isHidePerfect ? '👁️ 顯示全班' : '👁️ 隱藏全過關';
+            document.getElementById('btnHidePerfect').classList.toggle('bg-[#dfa888]', isHidePerfect);
+            document.getElementById('btnHidePerfect').classList.toggle('text-white', isHidePerfect);
+            renderAll();
         }
 
         function getLocalDateString() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
@@ -440,19 +415,30 @@
                 if (data) {
                     if (data.announcements && data.announcements !== announcements && isFirstLoad === false) { document.getElementById('announceDot').classList.remove('hidden'); }
                     
-                    tasks = data.tasks || []; 
-                    globalTaskData = data.globalTaskData || {};
-                    historyAtt = data.historyAtt || {}; 
-                    dailyNotes = data.dailyNotes || {}; 
-                    announcements = data.announcements || "";
-                    cleanTasks = data.cleanTasks || [];
-                    historyClean = data.historyClean || {};
+                    tasks = data.tasks || []; globalTaskData = data.globalTaskData || {};
+                    historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || "";
+                    cleanTasks = data.cleanTasks || []; historyClean = data.historyClean || {};
                     
                     grades = data.grades || {};
+                    // 🌟 自動升級舊版成績資料 (v31 -> v32) 🌟
                     ["國語", "數學"].forEach(sub => {
-                        if(!grades[sub]) grades[sub] = {};
-                        grades[sub].exams = grades[sub].exams || [];
-                        grades[sub].weights = grades[sub].weights || {};
+                        if(!grades[sub]) grades[sub] = { categories: [], scores: {} };
+                        if(grades[sub].exams) {
+                            grades[sub].categories = [];
+                            grades[sub].exams.forEach(ex => {
+                                grades[sub].categories.push({ name: ex, weight: grades[sub].weights?.[ex] || 1, exams: [{ name: "成績", weight: 1 }] });
+                            });
+                            for(let sid in grades[sub].scores) {
+                                for(let ex in grades[sub].scores[sid]) {
+                                    if(!ex.includes("_")) {
+                                        grades[sub].scores[sid][`${ex}_成績`] = grades[sub].scores[sid][ex];
+                                        delete grades[sub].scores[sid][ex];
+                                    }
+                                }
+                            }
+                            delete grades[sub].exams; delete grades[sub].weights;
+                        }
+                        grades[sub].categories = grades[sub].categories || [];
                         grades[sub].scores = grades[sub].scores || {};
                     });
                     
@@ -460,14 +446,14 @@
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
                     renderAll(); 
                     if(document.getElementById('examScheduleInput')) document.getElementById('examScheduleInput').value = examScheduleStr;
-                } else if (isFirstLoad) migrateLocalDataToCloud();
+                } else if (isFirstLoad) {
+                    saveToCloud(); // 初次登入
+                }
                 isFirstLoad = false;
                 const syncIcon = document.getElementById('syncStatus');
                 syncIcon.style.opacity = '0.5'; setTimeout(() => syncIcon.style.opacity = '1', 200);
             });
         }
-
-        function migrateLocalDataToCloud() { saveToCloud(); }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -478,10 +464,13 @@
             
             const inputField = document.getElementById('itemName');
             const subjectSwitch = document.getElementById('gradeSubjectSwitch');
+            const btnHidePerfect = document.getElementById('btnHidePerfect');
+            const btnAdd = document.getElementById('btnAddItem');
             
-            if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); }
-            else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); }
-            else if(tab === 'grade') { inputField.placeholder = "新增考試/成績項目..."; subjectSwitch.classList.remove('hidden'); }
+            if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnAdd.innerText = '新增'; }
+            else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnAdd.innerText = '新增'; }
+            else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnAdd.innerText = '加主項目'; }
+            else { btnHidePerfect.classList.add('hidden'); }
             
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
             
@@ -518,81 +507,131 @@
             saveToCloud(); closeNoteModal();
         }
 
-        // 🌟 核心防護：處理 Enter 鍵換行，並觸發存檔 🌟
-        function handleGradeEnter(e, currentSid, examName) {
+        // 🌟 新版：神級橫向快打 🌟
+        function handleGradeEnter(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                pendingNextFocus = { sid: currentSid + 1, exam: examName };
-                e.target.blur(); // 強制觸發 blur，如果數值有變就會引發 onchange -> 存檔 -> 重繪
+                const inputs = Array.from(document.querySelectorAll('.grade-input'));
+                const currentIndex = inputs.indexOf(e.target);
+                e.target.blur(); // 觸發儲存重繪
                 
-                // 防呆：如果數值沒變，就不會觸發重繪，我們必須手動把游標跳過去
-                setTimeout(() => {
-                    if (pendingNextFocus) {
-                        let nextInput = document.querySelector(`.grade-input[data-exam="${pendingNextFocus.exam}"][data-sid="${pendingNextFocus.sid}"]`);
-                        if(nextInput) { nextInput.focus(); nextInput.select(); }
-                        pendingNextFocus = null;
-                    }
-                }, 50);
+                if(currentIndex > -1 && currentIndex < inputs.length - 1) {
+                    pendingNextFocusIndex = currentIndex + 1; // 記錄全域索引，向右跳轉
+                } else if (currentIndex === inputs.length - 1) {
+                    pendingNextFocusIndex = 0; // 最後一格回到最前面
+                }
             }
         }
 
+        // 🌟 新版：樹狀成績渲染 🌟
         function renderGrades() {
-            if(!grades[currentGradeSubject]) grades[currentGradeSubject] = { exams: [], weights: {}, scores: {} };
+            if(!grades[currentGradeSubject]) grades[currentGradeSubject] = { categories: [], scores: {} };
             const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
-            let gHead = `<tr><th class="sticky-cross min-w-[80px] text-center text-lg font-black">座號</th>`;
-            subData.exams.forEach((exam, index) => {
-                const w = subData.weights[exam] || 1;
-                gHead += `<th class="min-w-[120px] text-center px-4">
-                    <div class="font-black text-[#8a4523] text-lg mb-1">${exam}</div>
-                    <div class="flex items-center justify-center gap-1 mb-2">
-                        <span class="text-xs font-bold">權重:</span>
-                        <input type="number" class="weight-input" data-weight-exam="${exam}" value="${w}" onchange="updateWeight('${exam}', this.value)" min="0" step="0.1">
+            
+            let h1 = `<tr><th class="sticky-cross min-w-[80px] text-center text-lg font-black bg-[#fdfcf9]" rowspan="2">座號</th>`;
+            let h2 = `<tr>`;
+            
+            if(subData.categories.length === 0) {
+                h1 += `<th class="text-stone-400 font-bold p-4 bg-white/50">請在上方輸入大項目名稱後點擊「加主項目」</th>`;
+                h2 += `<th class="hidden"></th>`;
+            }
+
+            subData.categories.forEach((cat, cIdx) => {
+                const cols = cat.exams.length > 0 ? cat.exams.length + 1 : 1;
+                h1 += `<th colspan="${cols}" class="border-x border-white/80 text-center bg-[#f4f1ea]">
+                    <div class="flex justify-center items-center gap-2">
+                        <span class="text-xl font-black text-[#8a4523]">${cat.name}</span>
+                        <button onclick="deleteCat(${cIdx})" class="text-[10px] bg-[#e3a8a8] text-[#6e2727] px-1.5 py-0.5 rounded shadow-sm hover:bg-[#d69595]">刪除大項</button>
                     </div>
-                    <div class="flex gap-1 justify-center">
-                        <button onclick="linearAdjust('${exam}')" class="text-xs bg-[#dfa888] text-white px-2 py-1 rounded hover:bg-[#c99070] shadow-sm">🪄 調分</button>
-                        <button onclick="deleteExam(${index})" class="text-xs bg-[#e3a8a8] text-[#6e2727] px-2 py-1 rounded hover:bg-[#d69595] shadow-sm">✕</button>
+                    <div class="text-sm font-bold mt-1 text-stone-600 flex items-center justify-center gap-2">
+                        <span>權重 <input type="number" class="weight-input" value="${cat.weight}" onchange="updateCatWeight(${cIdx}, this.value)" min="0" step="0.1"></span>
+                        <span class="text-stone-300">|</span>
+                        <button onclick="addSubExam(${cIdx})" class="text-xs bg-white text-[#6b6356] px-2 py-1 rounded shadow-sm hover:bg-stone-100">+ 加小項</button>
                     </div>
                 </th>`;
-            });
-            gHead += `<th class="min-w-[100px] text-center bg-[#e8e2d5] text-[#6b6356] font-black text-xl border-l-2 border-white">加權平均</th></tr>`;
-            document.getElementById('gradeHeader').innerHTML = gHead;
 
-            let gBody = '';
+                if(cat.exams.length === 0) {
+                    h2 += `<th class="bg-white/40 text-stone-400 text-sm py-2">尚未新增小項</th>`;
+                } else {
+                    cat.exams.forEach((ex, eIdx) => {
+                        h2 += `<th class="bg-white/50 border-r border-white/50 p-2 min-w-[90px]">
+                            <div class="font-black text-stone-700 text-base flex justify-center items-center gap-1">${ex.name} <button onclick="deleteSubExam(${cIdx}, ${eIdx})" class="text-[10px] text-red-400 hover:text-red-600">✕</button></div>
+                            <div class="text-xs font-bold text-stone-500 mt-0.5 flex justify-center items-center gap-1">權 <input type="number" class="weight-input w-[35px]" value="${ex.weight}" onchange="updateSubWeight(${cIdx}, ${eIdx}, this.value)" min="0" step="0.1"></div>
+                            <button onclick="linearAdjust(${cIdx}, ${eIdx})" class="mt-1.5 text-[10px] bg-[#dfa888] text-white px-2 py-0.5 rounded shadow-sm hover:bg-[#c99070]">🪄 調分</button>
+                        </th>`;
+                    });
+                    h2 += `<th class="bg-white/80 text-[#8a4523] min-w-[70px] text-sm font-black border-r border-white/80">大項平均</th>`;
+                }
+            });
+            h1 += `<th class="sticky-cross right-0 bg-[#e8e2d5] min-w-[100px] border-l-2 border-white text-center text-[#6b6356] font-black text-xl shadow-[-5px_0_10px_rgba(0,0,0,0.03)]" rowspan="2">學期總成績</th></tr>`;
+            h2 += `</tr>`;
+            document.getElementById('gradeHeader').innerHTML = h1 + h2;
+
+            let gBody = ''; let globalInputIndex = 0;
             for(let i=1; i<=count; i++) {
-                let rowHtml = `<tr><td class="sticky-left p-3 text-center font-black text-2xl border-b border-white/50 bg-white/30">${i}</td>`;
-                let totalScore = 0; let totalWeight = 0;
-                subData.exams.forEach(exam => {
-                    const val = subData.scores[i]?.[exam] !== undefined ? subData.scores[i][exam] : "";
-                    rowHtml += `<td class="p-2 border-b border-white/50 text-center">
-                        <input type="number" class="grade-input" data-exam="${exam}" data-sid="${i}" value="${val}" onchange="updateScore(${i}, '${exam}', this.value)" onkeydown="handleGradeEnter(event, ${i}, '${exam}')" placeholder="-">
-                    </td>`;
-                    const w = Number(subData.weights[exam]) || 1;
-                    if(val !== "") { totalScore += Number(val) * w; totalWeight += w; }
+                let rowHtml = `<tr><td class="sticky-left p-3 text-center font-black text-2xl border-b border-white/50 bg-[#fdfcf9]">${i}</td>`;
+                let totalScoreSum = 0; let totalWeightSum = 0;
+                
+                subData.categories.forEach((cat, cIdx) => {
+                    if(cat.exams.length === 0) {
+                        rowHtml += `<td class="bg-white/30 border-b border-white/50 text-center">-</td>`;
+                    } else {
+                        let catScoreSum = 0; let catWeightSum = 0;
+                        cat.exams.forEach((ex, eIdx) => {
+                            const key = `${cat.name}_${ex.name}`;
+                            const val = subData.scores[i]?.[key] !== undefined ? subData.scores[i][key] : "";
+                            rowHtml += `<td class="p-2 border-b border-white/50 border-r border-white/30 text-center bg-white/20">
+                                <input type="number" class="grade-input" data-index="${globalInputIndex}" value="${val}" onchange="updateScore(${i}, '${key}', this.value)" onkeydown="handleGradeEnter(event)" placeholder="-">
+                            </td>`;
+                            globalInputIndex++;
+                            const w = Number(ex.weight) || 1;
+                            if(val !== "") { catScoreSum += Number(val) * w; catWeightSum += w; }
+                        });
+                        let catAvg = catWeightSum > 0 ? (catScoreSum / catWeightSum) : null;
+                        rowHtml += `<td class="p-2 border-b border-white/50 border-r border-white/80 text-center font-black text-lg text-[#8a4523] bg-white/60">${catAvg !== null ? catAvg.toFixed(1) : '-'}</td>`;
+                        if(catAvg !== null) {
+                            const cw = Number(cat.weight) || 1; totalScoreSum += catAvg * cw; totalWeightSum += cw;
+                        }
+                    }
                 });
-                let avg = totalWeight > 0 ? (totalScore / totalWeight).toFixed(1) : "-";
-                rowHtml += `<td class="p-3 border-b border-white/50 text-center font-black text-2xl text-[#8a4523] bg-[#f4f1ea] border-l-2 border-white">${avg}</td></tr>`;
+                let totalAvg = totalWeightSum > 0 ? (totalScoreSum / totalWeightSum).toFixed(1) : "-";
+                rowHtml += `<td class="sticky-cross right-0 p-3 border-b border-white/50 text-center font-black text-3xl text-[#6b6356] bg-[#f4f1ea] border-l-2 border-white shadow-[-5px_0_10px_rgba(0,0,0,0.03)]">${totalAvg}</td></tr>`;
                 gBody += rowHtml;
             }
             document.getElementById('gradeBody').innerHTML = gBody;
         }
 
-        function updateWeight(exam, val) { grades[currentGradeSubject].weights[exam] = val; saveToCloud(); }
-        function updateScore(studentId, exam, val) { if(!grades[currentGradeSubject].scores[studentId]) grades[currentGradeSubject].scores[studentId] = {}; grades[currentGradeSubject].scores[studentId][exam] = val; saveToCloud(); }
-        function deleteExam(index) { if(confirm('確定刪除這個成績項目？')) { grades[currentGradeSubject].exams.splice(index, 1); saveToCloud(); } }
+        function updateCatWeight(cIdx, val) { grades[currentGradeSubject].categories[cIdx].weight = val; saveToCloud(); }
+        function updateSubWeight(cIdx, eIdx, val) { grades[currentGradeSubject].categories[cIdx].exams[eIdx].weight = val; saveToCloud(); }
+        function updateScore(sid, key, val) { if(!grades[currentGradeSubject].scores[sid]) grades[currentGradeSubject].scores[sid] = {}; grades[currentGradeSubject].scores[sid][key] = val; saveToCloud(); }
+        
+        function deleteCat(cIdx) { if(confirm('確定刪除這個大項目嗎？底下的所有小項成績都會消失喔！')) { grades[currentGradeSubject].categories.splice(cIdx, 1); saveToCloud(); } }
+        function deleteSubExam(cIdx, eIdx) { if(confirm('確定刪除此小項成績？')) { grades[currentGradeSubject].categories[cIdx].exams.splice(eIdx, 1); saveToCloud(); } }
+        function addSubExam(cIdx) {
+            let name = prompt("請輸入小項名稱 (例如: CH1 或 L1)：");
+            if(name) {
+                name = name.trim().replace(/[.#$/\[\]]/g, '_');
+                if(!grades[currentGradeSubject].categories[cIdx].exams) grades[currentGradeSubject].categories[cIdx].exams = [];
+                if(grades[currentGradeSubject].categories[cIdx].exams.find(e => e.name === name)) return alert("名稱已存在！");
+                grades[currentGradeSubject].categories[cIdx].exams.push({ name: name, weight: 1 });
+                saveToCloud();
+            }
+        }
 
-        function linearAdjust(examName) {
-            const count = parseInt(document.getElementById('studentCount').value) || 0; const subData = grades[currentGradeSubject]; let validScores = [];
-            for(let i=1; i<=count; i++) { const s = subData.scores[i]?.[examName]; if(s !== undefined && s !== null && s !== "") validScores.push(Number(s)); }
+        function linearAdjust(cIdx, eIdx) {
+            const count = parseInt(document.getElementById('studentCount').value) || 0; const subData = grades[currentGradeSubject]; 
+            const cat = subData.categories[cIdx]; const ex = cat.exams[eIdx]; const key = `${cat.name}_${ex.name}`;
+            let validScores = [];
+            for(let i=1; i<=count; i++) { const s = subData.scores[i]?.[key]; if(s !== undefined && s !== null && s !== "") validScores.push(Number(s)); }
             if(validScores.length === 0) return alert("目前還沒有輸入任何成績喔！");
             const max = Math.max(...validScores); const min = Math.min(...validScores);
             if(max === min) return alert("全班分數都一樣，無法使用線性調分公式！");
-            if(confirm(`線性調分：\n最低分(${min}分) ⇨ 60分\n最高分(${max}分) ⇨ 97分\n\n確定執行？`)) {
+            if(confirm(`針對【${ex.name}】進行線性調分：\n最低分(${min}分) ⇨ 60分\n最高分(${max}分) ⇨ 97分\n\n確定執行？`)) {
                 for(let i=1; i<=count; i++) {
-                    const s = subData.scores[i]?.[examName];
+                    const s = subData.scores[i]?.[key];
                     if(s !== undefined && s !== null && s !== "") {
-                        let raw = Number(s);
-                        let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60);
-                        subData.scores[i][examName] = Math.min(100, Math.max(0, adj));
+                        let raw = Number(s); let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60);
+                        subData.scores[i][key] = Math.min(100, Math.max(0, adj));
                     }
                 }
                 saveToCloud();
@@ -600,37 +639,33 @@
         }
 
         function renderAll() {
-            // 🌟 核心防護：在畫面重繪前，記下當前正在打字的格子 🌟
-            let currentFocus = null;
+            let currentFocusIndex = null;
             let activeEl = document.activeElement;
-            if (activeEl) {
-                if (activeEl.classList.contains('grade-input')) {
-                    currentFocus = { type: 'grade', sid: activeEl.dataset.sid, exam: activeEl.dataset.exam };
-                } else if (activeEl.classList.contains('weight-input')) {
-                    currentFocus = { type: 'weight', exam: activeEl.dataset.weightExam };
-                }
-            }
+            if (activeEl && activeEl.classList.contains('grade-input')) { currentFocusIndex = activeEl.dataset.index; }
 
-            const date = document.getElementById('currentDate').value;
-            const count = parseInt(document.getElementById('studentCount').value) || 0;
-            
+            const date = document.getElementById('currentDate').value; const count = parseInt(document.getElementById('studentCount').value) || 0;
             if (!historyAtt[date]) historyAtt[date] = {}; const todaysAtt = historyAtt[date];
             if (!historyClean[date]) historyClean[date] = {}; const todaysClean = historyClean[date];
 
             const aList = document.getElementById('announceList'); const emptyText = document.getElementById('emptyAnnounceText');
-            const fsCard = document.getElementById('fsAnnounceCard'); const fsList = document.getElementById('fsAnnounceList');
-            
             if (announcements) {
                 const lis = announcements.split('\n').filter(l => l.trim()).map(l => `<li class="border-b border-stone-200/50 pb-2 last:border-0">${l}</li>`).join('');
                 aList.innerHTML = lis; emptyText.classList.add('hidden');
-                if(fsCard) { fsCard.classList.remove('hidden'); fsList.innerHTML = lis; }
-            } else {
-                aList.innerHTML = ''; emptyText.classList.remove('hidden');
-                if(fsCard) fsCard.classList.add('hidden');
+            } else { aList.innerHTML = ''; emptyText.classList.remove('hidden'); }
+
+            // 🌟 隱藏全過關邏輯計算 🌟
+            let imperfectSids = new Set();
+            for(let i=1; i<=count; i++) {
+                let isPerfect = true;
+                tasks.forEach(t => { if((globalTaskData[i] && globalTaskData[i][t]) !== 2) isPerfect = false; });
+                if(!isPerfect) imperfectSids.add(i);
             }
 
             let studentsHeader = '';
-            for(let i = 1; i <= count; i++) studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`;
+            for(let i = 1; i <= count; i++) {
+                if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue;
+                studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`;
+            }
 
             // 作業矩陣
             const tBody = document.getElementById('taskBody');
@@ -639,18 +674,15 @@
             tasks.forEach((t, index) => {
                 let row = `<tr class="bg-white/10">
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="flex items-start gap-2 mb-2">
-                            <span class="drag-handle text-stone-400 hover:text-[#dfa888] text-xl px-1">⋮⋮</span>
-                            <div class="font-black text-stone-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>
-                        </div>
+                        <div class="flex items-start gap-2 mb-2"><span class="drag-handle text-stone-400 hover:text-[#dfa888] text-xl px-1">⋮⋮</span><div class="font-black text-stone-800 text-base md:text-lg leading-tight mt-0.5">${t}</div></div>
                         <div class="flex gap-2 pl-6">
-                            <button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white border border-white/80 shadow-sm">✔ 全完成</button>
-                            <button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
+                            <button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white shadow-sm">✔ 全完成</button>
+                            <button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] shadow-sm">✕</button>
                         </div>
                     </td>`;
                 for (let i = 1; i <= count; i++) {
-                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
-                    const lbls = ["未交", "待訂", "完成"];
+                    if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue;
+                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0; const lbls = ["未交", "待訂", "完成"];
                     row += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`;
                 }
                 tBody.innerHTML += row + '</tr>';
@@ -663,18 +695,14 @@
             cleanTasks.forEach((t, index) => {
                 let row = `<tr class="bg-white/10">
                     <td class="sticky-left p-3 md:p-4 border-b border-white/50">
-                        <div class="flex items-start gap-2 mb-2">
-                            <span class="drag-handle text-stone-400 hover:text-emerald-500 text-xl px-1">⋮⋮</span>
-                            <div class="font-black text-emerald-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>
-                        </div>
+                        <div class="flex items-start gap-2 mb-2"><span class="drag-handle text-stone-400 hover:text-emerald-500 text-xl px-1">⋮⋮</span><div class="font-black text-emerald-800 text-base md:text-lg leading-tight mt-0.5">${t}</div></div>
                         <div class="flex gap-2 pl-6">
-                            <button onclick="completeAllClean('${t}')" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-emerald-200 border border-emerald-200 shadow-sm">✔ 全過關</button>
-                            <button onclick="deleteCleanTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] border border-white/50 shadow-sm">✕</button>
+                            <button onclick="completeAllClean('${t}')" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-emerald-200 shadow-sm">✔ 全過關</button>
+                            <button onclick="deleteCleanTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] shadow-sm">✕</button>
                         </div>
                     </td>`;
                 for (let i = 1; i <= count; i++) {
-                    const s = (todaysClean[i] && todaysClean[i][t]) || 0;
-                    const lbls = ["未完成", "完成"];
+                    const s = (todaysClean[i] && todaysClean[i][t]) || 0; const lbls = ["未完成", "完成"];
                     row += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleClean(${i},'${t}')" class="state-btn clean-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`;
                 }
                 cBody.innerHTML += row + '</tr>';
@@ -683,7 +711,7 @@
             // 出勤矩陣
             const aBody = document.getElementById('attendanceBody');
             document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`;
-            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div><div class="text-xs text-stone-500 mt-1 font-black">點擊切換假別</div></td>`;
+            let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div></td>`;
             for (let i = 1; i <= count; i++) {
                 const s = todaysAtt[i] || 0;
                 attRow += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`;
@@ -698,56 +726,48 @@
             
             tasks.forEach(t => {
                 let missing = []; let correction = []; 
-                for (let i = 1; i <= count; i++) {
-                    const s = (globalTaskData[i] || {})[t] || 0;
-                    if (s === 0) missing.push(i); else if (s === 1) correction.push(i);
-                }
-                if (missing.length === 0 && correction.length === 0) {
-                    tReport.innerHTML += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員達標 ✓</div>`;
-                } else {
+                for (let i = 1; i <= count; i++) { const s = (globalTaskData[i] || {})[t] || 0; if (s === 0) missing.push(i); else if (s === 1) correction.push(i); }
+                if (missing.length === 0 && correction.length === 0) { tReport.innerHTML += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員達標 ✓</div>`; } 
+                else {
                     hasUnfinished = true;
                     let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2 rounded-r-lg"><div class="text-stone-800 font-black mb-1 text-base">【${t}】</div>`;
                     if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-bold">未交：${missing.join(', ')} 號</div>`;
                     if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-bold mt-1">待訂正：${correction.join(', ')} 號</div>`;
                     tReport.innerHTML += reportHtml + `</div>`;
-
                     let fsHtml = `<div class="mb-8 border-l-[8px] border-[#dfa888] pl-8 bg-white/80 py-8 rounded-2xl"><div class="text-stone-800 font-black mb-4 text-3xl md:text-4xl">【${t}】</div>`;
                     if (missing.length > 0) fsHtml += `<div class="text-stone-500 font-black text-3xl tracking-[0.1em] mt-4">未交：${missing.join(', ')} 號</div>`;
                     if (correction.length > 0) fsHtml += `<div class="text-[#8a4523] font-black text-3xl tracking-[0.1em] mt-4">待訂正：${correction.join(', ')} 號</div>`;
-                    fsReport.innerHTML += fsHtml + `</div>`;
+                    if(fsReport) fsReport.innerHTML += fsHtml + `</div>`;
                 }
             });
-
-            if (!hasUnfinished) fsReport.innerHTML = `<div class="text-[#788e83] font-black text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
-            let atts = [];
-            for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border-2 border-white px-3 py-1 rounded-lg font-black text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
+            if (!hasUnfinished && fsReport) fsReport.innerHTML = `<div class="text-[#788e83] font-black text-4xl text-center py-12">🎉 完美！目前全班作業皆已完成</div>`;
+            
+            let atts = []; for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border-2 border-white px-3 py-1 rounded-lg font-black text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`);
             aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
 
             initSortable();
 
-            // 🌟 核心防護：把剛剛記下來的游標，重新插回重繪後的新表格 🌟
-            if (pendingNextFocus) {
-                let nextInput = document.querySelector(`.grade-input[data-exam="${pendingNextFocus.exam}"][data-sid="${pendingNextFocus.sid}"]`);
-                if(nextInput) { nextInput.focus(); nextInput.select(); }
-                pendingNextFocus = null; // 跳轉完成，清空任務
-            } else if (currentFocus) {
-                if (currentFocus.type === 'grade') {
-                    let el = document.querySelector(`.grade-input[data-exam="${currentFocus.exam}"][data-sid="${currentFocus.sid}"]`);
-                    // 只有在游標真的不見時才幫他找回來
-                    if(el && document.activeElement !== el) { el.focus(); }
-                } else if (currentFocus.type === 'weight') {
-                    let el = document.querySelector(`.weight-input[data-weight-exam="${currentFocus.exam}"]`);
-                    if(el && document.activeElement !== el) { el.focus(); }
-                }
+            // 🌟 將游標精準插回橫向跳轉的新格子 🌟
+            if (pendingNextFocusIndex !== null) {
+                let inputs = document.querySelectorAll('.grade-input');
+                if(inputs[pendingNextFocusIndex]) { inputs[pendingNextFocusIndex].focus(); inputs[pendingNextFocusIndex].select(); }
+                pendingNextFocusIndex = null; 
+            } else if (currentFocusIndex !== null) {
+                let el = document.querySelector(`.grade-input[data-index="${currentFocusIndex}"]`);
+                if(el && document.activeElement !== el) { el.focus(); }
             }
         }
 
         function addItem() { 
             let val = document.getElementById('itemName').value.trim(); if (!val) return;
-            if(/[.#$/\[\]]/.test(val)) { alert("⚠️ 名稱不能包含 . # $ / [ ] 等特殊符號，已自動替換！"); val = val.replace(/[.#$/\[\]]/g, '_'); }
+            if(/[.#$/\[\]]/.test(val)) { alert("⚠️ 名稱符號已自動純淨化！"); val = val.replace(/[.#$/\[\]]/g, '_'); }
             if(currentTab === 'task') { if(!tasks.includes(val)) { tasks.push(val); } }
             else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } }
-            else if(currentTab === 'grade') { if(!grades[currentGradeSubject].exams.includes(val)) { grades[currentGradeSubject].exams.push(val); grades[currentGradeSubject].weights[val] = 1; } }
+            else if(currentTab === 'grade') { 
+                if(!grades[currentGradeSubject].categories.find(c => c.name === val)) { 
+                    grades[currentGradeSubject].categories.push({ name: val, weight: 1, exams: [] }); 
+                } 
+            }
             document.getElementById('itemName').value = ''; saveToCloud(); 
         }
         
@@ -804,16 +824,23 @@
             });
 
             ["國語", "數學"].forEach(subject => {
-                let gradeRows = []; const subData = grades[subject] || { exams: [], weights: {}, scores: {} };
+                let gradeRows = []; const subData = grades[subject];
                 for(let i=1; i<=count; i++) {
-                    let row = { '座號': i }; let totalScore = 0; let totalWeight = 0;
-                    subData.exams.forEach(exam => {
-                        const val = subData.scores[i]?.[exam]; row[exam] = val !== undefined ? val : "";
-                        const w = Number(subData.weights[exam]) || 1; if(val !== undefined && val !== "") { totalScore += Number(val) * w; totalWeight += w; }
+                    let row = { '座號': i }; let tScore = 0, tWeight = 0;
+                    subData.categories.forEach(cat => {
+                        let cScore = 0, cWeight = 0;
+                        cat.exams.forEach(ex => {
+                            let key = `${cat.name}_${ex.name}`; let val = subData.scores[i]?.[key];
+                            row[`${cat.name}-${ex.name}`] = val !== undefined ? val : "";
+                            if(val !== undefined && val !== "") { cScore += Number(val) * ex.weight; cWeight += ex.weight; }
+                        });
+                        if(cWeight > 0) { let cAvg = cScore / cWeight; row[`${cat.name}小計平均`] = cAvg.toFixed(1); tScore += cAvg * cat.weight; tWeight += cat.weight; } 
+                        else { row[`${cat.name}小計平均`] = ""; }
                     });
-                    row['加權平均'] = totalWeight > 0 ? (totalScore / totalWeight).toFixed(1) : ""; gradeRows.push(row);
+                    row['學期總加權平均'] = tWeight > 0 ? (tScore / tWeight).toFixed(1) : "";
+                    gradeRows.push(row);
                 }
-                if(subData.exams.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), `${subject}期末成績`);
+                if(subData.categories.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), `${subject}期末成績`);
             });
 
             let noteRows = []; Object.keys(dailyNotes).sort().forEach(d => { if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] }); });
