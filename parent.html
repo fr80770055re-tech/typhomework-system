@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級即時聯絡簿 - 家長查詢端</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Nunito', 'Naguri', sans-serif; background-color: #fdfcf9; color: #524c42; -webkit-font-smoothing: antialiased; }
+        .status-badge { padding: 4px 12px; border-radius: 12px; font-weight: 900; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-0 { background-color: #f3f4f6; color: #606873; border: 1px solid #e5e7eb; } 
+        .status-1 { background-color: #ffedd5; color: #b45309; border: 1px solid #fed7aa; } 
+        .status-2 { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; } 
+        .status-3 { background-color: #fae8ff; color: #86198f; border: 1px solid #f5d0fe; } 
+    </style>
+</head>
+<body class="bg-[#f0ebe1] min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-white">
+        <div class="bg-[#8a4523] p-6 text-center">
+            <h1 class="text-2xl font-black text-white tracking-widest">📝 班級即時聯絡簿</h1>
+            <p class="text-amber-100 font-bold mt-1 opacity-90 text-sm">家長專屬即時查詢系統</p>
+        </div>
+
+        <div class="p-6 md:p-8 bg-[#fdfcf9]">
+            
+            <div id="loginSection">
+                <div class="mb-5">
+                    <label class="block text-lg font-black text-stone-700 mb-2">👤 請選擇學生座號：</label>
+                    <div class="relative">
+                        <select id="studentSelect" class="w-full appearance-none bg-white border-2 border-[#d3cabc] text-stone-700 font-black text-xl py-3 px-4 rounded-2xl shadow-sm outline-none focus:border-[#dfa888] focus:ring-4 focus:ring-[#dfa888]/20 transition-all cursor-pointer">
+                            <option value="0">-- 請選擇座號 --</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-stone-500">
+                            <svg class="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-lg font-black text-stone-700 mb-2">🔒 查詢密碼：</label>
+                    <input type="password" id="passwordInput" placeholder="請輸入身分證後四碼" maxlength="4" class="w-full bg-white border-2 border-[#d3cabc] text-stone-700 font-black text-xl py-3 px-4 rounded-2xl shadow-sm outline-none focus:border-[#dfa888] focus:ring-4 focus:ring-[#dfa888]/20 transition-all text-center tracking-[0.5em]">
+                </div>
+
+                <button onclick="verifyAndRender()" class="w-full bg-[#dfa888] text-white py-3.5 rounded-2xl font-black text-xl shadow-sm hover:bg-[#c99070] transition active:scale-95">登入查詢</button>
+            </div>
+
+            <!-- 連線狀態 -->
+            <div id="loadingStatus" class="text-center py-10">
+                <div class="animate-pulse flex flex-col items-center justify-center">
+                    <span class="text-4xl mb-3">📡</span>
+                    <span class="text-stone-500 font-black tracking-widest text-lg">與教室連線中...</span>
+                </div>
+            </div>
+
+            <!-- 資料顯示區 -->
+            <div id="dataContainer" class="hidden space-y-6 mt-4">
+                <div class="bg-amber-50 rounded-2xl p-5 border border-amber-200/50 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
+                    <h2 class="text-lg font-black text-amber-900 mb-3 flex items-center gap-2"><span>📣</span> 導師本日宣導事項</h2>
+                    <ul id="announceList" class="list-disc list-inside text-stone-700 font-bold space-y-2 ml-1 leading-relaxed"></ul>
+                    <div id="emptyAnnounceText" class="text-stone-400 font-bold italic text-sm hidden">今日尚無宣導事項</div>
+                </div>
+
+                <div>
+                    <h2 class="text-lg font-black text-stone-700 mb-3 flex items-center gap-2"><span>📚</span> 今日作業與資料繳交</h2>
+                    <div id="taskList" class="space-y-3"></div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="bg-stone-100 p-4 text-center border-t border-stone-200">
+            <p class="text-xs font-bold text-stone-400 flex items-center justify-center gap-1">
+                <span class="relative flex h-2 w-2 mr-1"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                資料最後同步於：<span id="lastSyncTime">--:--:--</span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2jePwSyZH8xEux6mPc-LlYXoF7xJruIo",
+            authDomain: "typhomeworksystem.firebaseapp.com",
+            projectId: "typhomeworksystem",
+            storageBucket: "typhomeworksystem.firebasestorage.app",
+            messagingSenderId: "563125021119",
+            appId: "1:563125021119:web:169219a4e42e3936aa990a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let classData = null; 
+        let currentAuthenticatedSid = null;
+
+        db.ref('public_board/my_class').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                classData = data;
+                document.getElementById('loadingStatus').classList.add('hidden');
+                const now = new Date();
+                document.getElementById('lastSyncTime').innerText = now.toLocaleTimeString('zh-TW', {hour12: false});
+                
+                const selectEl = document.getElementById('studentSelect');
+                if (selectEl.options.length <= 1) {
+                    const count = parseInt(data.studentCount) || 30;
+                    for(let i=1; i<=count; i++) {
+                        const opt = document.createElement('option');
+                        opt.value = i; opt.text = `${i} 號`;
+                        selectEl.appendChild(opt);
+                    }
+                }
+                
+                // 如果已經驗證過密碼，當老師更新資料時，家長畫面自動重繪更新
+                if (currentAuthenticatedSid) {
+                    renderStudentData(currentAuthenticatedSid);
+                }
+            }
+        });
+
+        // 🌟 密碼驗證邏輯 🌟
+        function verifyAndRender() {
+            if (!classData) return alert("系統還在讀取中，請稍候...");
+            
+            const sid = document.getElementById('studentSelect').value;
+            const inputPwd = document.getElementById('passwordInput').value.trim();
+            
+            if (sid === "0") return alert("請先選擇孩子的座號！");
+            if (inputPwd === "") return alert("請輸入查詢密碼！");
+
+            // 去雲端抓取老師設定好的密碼 (預設為 0000)
+            const realPwd = (classData.studentPasswords && classData.studentPasswords[sid]) ? classData.studentPasswords[sid] : "0000";
+
+            if (inputPwd !== realPwd) {
+                alert("❌ 密碼錯誤！請確認身分證後4碼是否正確，或向導師確認。");
+                document.getElementById('passwordInput').value = '';
+                return;
+            }
+
+            // 驗證成功，隱藏登入區塊，顯示資料
+            currentAuthenticatedSid = sid;
+            document.getElementById('loginSection').classList.add('hidden');
+            renderStudentData(sid);
+        }
+
+        function renderStudentData(sid) {
+            const container = document.getElementById('dataContainer');
+            container.classList.remove('hidden');
+
+            const aList = document.getElementById('announceList');
+            const emptyText = document.getElementById('emptyAnnounceText');
+            if (classData.announcements && classData.announcements.trim() !== '') {
+                const lis = classData.announcements.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('');
+                aList.innerHTML = lis; aList.classList.remove('hidden'); emptyText.classList.add('hidden');
+            } else {
+                aList.classList.add('hidden'); emptyText.classList.remove('hidden');
+            }
+
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            
+            const tasks = classData.tasks || [];
+            const globalTaskData = classData.globalTaskData || {};
+            const taskDates = classData.taskDates || {};
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div class="text-center p-6 bg-white rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 font-bold">目前無指定作業</div>';
+                return;
+            }
+
+            tasks.forEach(taskName => {
+                const s = (globalTaskData[sid] && globalTaskData[sid][taskName]) || 0;
+                const statusInfo = {
+                    0: { text: "✕ 未繳交", class: "status-0" },
+                    1: { text: "⚠️ 待訂正", class: "status-1" },
+                    2: { text: "✔ 已完成", class: "status-2" },
+                    3: { text: "📝 批改中", class: "status-3" }
+                };
+                const info = statusInfo[s];
+                const assignDate = taskDates[taskName] ? `<div class="text-[10px] text-stone-400 font-bold mt-1 font-mono tracking-widest">指派日期: ${taskDates[taskName]}</div>` : '';
+
+                taskList.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-stone-100 shadow-sm transition-all">
+                        <div><div class="font-black text-stone-800 text-[1.1rem]">${taskName}</div>${assignDate}</div>
+                        <div class="status-badge ${info.class}">${info.text}</div>
+                    </div>`;
+            });
+        }
+    </script>
+</body>
+</html>
