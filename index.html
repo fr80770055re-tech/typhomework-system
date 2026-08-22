@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理系統 v34 - 隱私加密版</title>
+    <title>班級管理系統 v35 - 縮放滑軌版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
@@ -12,36 +12,56 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-    <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style id="dynamicStyles">
-        :root { --base-font-size: 16px; }
+        :root { 
+            --base-font-size: 16px; 
+            /* 🌟 新增縮放變數 🌟 */
+            --zoom: 1; 
+        }
         body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-size: var(--base-font-size); font-family: 'Nunito', 'Naguri', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f0ebe1; background-image: radial-gradient(at 0% 0%, hsla(28, 40%, 85%, 1) 0px, transparent 50%), radial-gradient(at 100% 100%, hsla(200, 30%, 85%, 1) 0px, transparent 50%), radial-gradient(at 50% 100%, hsla(350, 30%, 88%, 1) 0px, transparent 50%); background-attachment: fixed; letter-spacing: 0.04em; }
         .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
         .glass-header { background: rgba(74, 74, 72, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        ::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); border-radius: 10px; } ::-webkit-scrollbar-thumb { background: rgba(187, 174, 160, 0.6); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        
+        /* 🌟 捲軸加粗 🌟 */
+        ::-webkit-scrollbar { width: 14px; height: 14px; } 
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); border-radius: 10px; } 
+        ::-webkit-scrollbar-thumb { background: rgba(187, 174, 160, 0.8); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; cursor: pointer; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(138, 69, 35, 0.6); border: 3px solid transparent; background-clip: padding-box;}
+
         .main-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; width: 100%; } .scroll-section { flex: 1; overflow: auto; background: transparent; padding-bottom: 150px; }
-        .state-btn { width: 100%; min-width: 62px; height: 55px; border-radius: 18px; font-weight: 900; font-size: 1.15em; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(4px); }
+        
+        /* 🌟 套用縮放變數的按鈕與字體 🌟 */
+        .state-btn { width: 100%; min-width: calc(62px * var(--zoom)); height: calc(55px * var(--zoom)); border-radius: calc(18px * var(--zoom)); font-weight: 900; font-size: calc(1.15em * var(--zoom)); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid rgba(255,255,255,0.6); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s; backdrop-filter: blur(4px); }
         .state-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); filter: brightness(1.03); } .state-btn:active { transform: scale(0.9) translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.05s; }
         
         .task-0 { background-color: rgba(230, 232, 235, 0.7); color: #606873; } .task-1 { background-color: rgba(238, 191, 165, 0.95); color: #8a4523; } .task-2 { background-color: rgba(163, 193, 218, 0.95); color: #2c4a6b; } .task-3 { background-color: rgba(216, 180, 226, 0.95); color: #5c3a6b; border-color: rgba(186, 150, 196, 0.6); }
         .att-0 { background-color: rgba(168, 213, 186, 0.95); color: #2b593f; } .att-1 { background-color: rgba(235, 215, 158, 0.95); color: #7a6320; } .att-2 { background-color: rgba(227, 168, 168, 0.95); color: #6e2727; } .att-3 { background-color: rgba(164, 201, 235, 0.95); color: #264e73; } .att-4 { background-color: rgba(189, 195, 199, 0.95); color: #434a52; } .att-5 { background-color: rgba(203, 187, 224, 0.95); color: #4a3666; }
         .clean-0 { background-color: rgba(220, 224, 229, 0.7); color: #606873; border-color: rgba(200,200,200,0.6); } .clean-1 { background-color: rgba(52, 211, 153, 0.95); color: #ffffff; border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 4px 0 rgba(5, 150, 105, 0.8); }
-        .btn-idx { position: absolute; top: 0; left: 0; font-size: 0.75em; font-weight: 700; background: rgba(0,0,0,0.06); padding: 3px 9px; border-radius: 16px 0 16px 0; z-index: 10; }
-        .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: 6px; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+        
+        .btn-idx { position: absolute; top: 0; left: 0; font-size: calc(0.75em * var(--zoom)); font-weight: 700; background: rgba(0,0,0,0.06); padding: calc(3px * var(--zoom)) calc(9px * var(--zoom)); border-radius: calc(16px * var(--zoom)) 0 calc(16px * var(--zoom)) 0; z-index: 10; }
+        .btn-text { font-size: 1.2em; font-weight: 900; line-height: 1.2; z-index: 5; margin-top: calc(6px * var(--zoom)); text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+        
         table { border-collapse: separate; border-spacing: 0; }
         th { background: rgba(240, 235, 225, 0.9); backdrop-filter: blur(12px); font-weight: 900; color: #6b6356; border-bottom: 2px solid rgba(255,255,255,0.6); padding: 10px 4px; white-space: nowrap; }
-        th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; } .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); } th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 1); backdrop-filter: blur(12px); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
+        .student-th { min-width: calc(75px * var(--zoom)); font-size: calc(1.125rem * var(--zoom)); padding-left: calc(0.25rem * var(--zoom)); padding-right: calc(0.25rem * var(--zoom)); }
+        th.sticky-top { position: sticky; top: 0; z-index: 20; text-align: center; } 
+        .sticky-left { position: sticky; left: 0; z-index: 20; background: rgba(248, 246, 240, 1); border-right: 2px solid rgba(255,255,255,0.6); transition: background-color 0.2s; } 
+        th.sticky-cross { position: sticky; top: 0; left: 0; z-index: 30; background: rgba(232, 226, 213, 1); border-right: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6);}
+        
+        /* 🌟 整列高亮護眼效果 🌟 */
+        tbody tr { transition: background-color 0.15s; }
+        tbody tr:hover td { background-color: rgba(255, 255, 255, 0.4) !important; }
+        tbody tr:hover td.sticky-left { background-color: rgba(235, 230, 220, 1) !important; }
+
         .tab-btn { flex: 1; padding: 12px 0; font-weight: 900; font-size: 1.05em; transition: 0.2s; border-radius: 18px 18px 0 0; min-width: 85px; white-space: nowrap; } .tab-active { background-color: rgba(255,255,255,0.6); color: #6b6356; border-top: 5px solid #9aa5b1; } .tab-inactive { background-color: rgba(255,255,255,0.2); color: #a39b8e; }
         .report-section { border-top: 2px solid rgba(255,255,255,0.6); padding: 0 15px 15px 15px; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; position: absolute; bottom: 0; left: 0; right: 0; z-index: 40; } .report-open { height: 35%; min-height: 250px; } .report-closed { height: 30px; overflow: hidden; padding-bottom: 0; }
         .drawer-panel { position: fixed; top: 0; right: -100%; width: 85%; max-width: 400px; height: 100vh; z-index: 90; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(248, 246, 240, 0.95); backdrop-filter: blur(20px); border-left: 2px solid rgba(255,255,255,0.8); box-shadow: -10px 0 30px rgba(0,0,0,0.08); } .drawer-open { right: 0 !important; } .drawer-backdrop { position: fixed; inset: 0; bg: black/20; z-index: 80; backdrop-blur: sm; transition: opacity 0.3s; opacity: 0; pointer-events: none; } .backdrop-show { opacity: 1 !important; pointer-events: auto !important; background-color: rgba(0,0,0,0.15); backdrop-filter: blur(4px); }
-        @media (max-height: 500px) and (orientation: landscape) { .glass-header { padding-top: 4px; padding-bottom: 4px; } .control-bar { padding: 4px 8px; } .state-btn { height: 45px; font-size: 1rem; } .tab-btn { padding: 6px 0; font-size: 0.9rem; } }
-        .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; letter-spacing: -0.01em; } .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); } @media (min-width: 768px) { .clock-split { font-size: min(9vw, 35vh); line-height: 1; } .clock-full { font-size: min(13vw, 45vh); line-height: 1; } } @media (max-width: 767px) { .clock-split { font-size: min(13vw, 22vh); line-height: 1; } .clock-full { font-size: min(14vw, 35vh); line-height: 1; } }
-        .sortable-ghost { opacity: 0.4; background-color: rgba(223, 168, 136, 0.3); } .drag-handle { cursor: grab; transition: 0.2s; padding: 4px; } .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
-        .grade-input { width: 60px; text-align: center; font-weight: 900; font-size: 1.1em; padding: 6px 2px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; transition: 0.2s; color: #6b6356; } .grade-input:focus { border-color: #9aa5b1; background: white; box-shadow: 0 0 10px rgba(154,165,177,0.3); } .weight-input { width: 40px; text-align: center; font-weight: 900; font-size: 0.85em; padding: 1px; border-radius: 6px; border: 1px solid rgba(200,200,200,0.8); background: rgba(255,255,255,0.8); outline: none; }
+        
+        .grade-input { width: calc(65px * var(--zoom)); text-align: center; font-weight: 900; font-size: calc(1.1em * var(--zoom)); padding: calc(6px * var(--zoom)) 2px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; transition: 0.2s; color: #6b6356; } .grade-input:focus { border-color: #9aa5b1; background: white; box-shadow: 0 0 10px rgba(154,165,177,0.3); } .weight-input { width: 40px; text-align: center; font-weight: 900; font-size: 0.85em; padding: 1px; border-radius: 6px; border: 1px solid rgba(200,200,200,0.8); background: rgba(255,255,255,0.8); outline: none; }
+        .drag-handle { cursor: grab; transition: 0.2s; padding: 4px; } .drag-handle:active { cursor: grabbing; transform: scale(1.1); }
     </style>
 </head>
 <body class="p-0 sm:p-3 relative">
@@ -55,6 +75,7 @@
         </div>
     </div>
 
+    <!-- 宣導抽屜 -->
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="toggleAnnounceDrawer(false)"></div>
     <div id="announceDrawer" class="drawer-panel p-6 flex flex-col">
         <div class="flex justify-between items-center mb-6 border-b border-stone-200 pb-3 shrink-0">
@@ -90,17 +111,22 @@
                     <label class="text-sm font-black text-stone-600 hidden sm:block">人數:</label>
                     <input type="number" id="studentCount" value="5" class="w-10 bg-transparent font-black text-center outline-none text-stone-700 text-sm" onchange="saveToCloud()">
                 </div>
+                
+                <!-- 🌟 新增：無段縮放滑軌 🌟 -->
+                <div class="flex items-center gap-1.5 bg-white/60 px-2 py-1.5 rounded-xl shadow-sm border border-white/60">
+                    <span class="text-sm cursor-help" title="縮放表格大小">🔍</span>
+                    <input type="range" id="uiZoom" min="0.5" max="1.1" step="0.05" value="1" oninput="changeZoom(this.value)" class="w-16 md:w-24 accent-[#dfa888]">
+                </div>
+
                 <div class="flex items-center gap-1.5 bg-white/60 px-2.5 py-1.5 rounded-xl shadow-sm border border-white/60">
                     <span class="text-sm">📅</span>
                     <input type="date" id="currentDate" class="bg-transparent border-none font-black text-stone-700 outline-none text-xs md:text-sm" onchange="renderAll()">
                 </div>
-                <button onclick="toggleAnnounceDrawer(true)" id="btnDrawerTrigger" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#c99070] shadow-sm transition relative">📣 宣導 <span id="announceDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span></button>
+                
+                <button onclick="toggleAnnounceDrawer(true)" class="bg-[#dfa888] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#c99070] shadow-sm transition relative">📣 宣導 <span id="announceDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span></button>
                 <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
-                
-                <!-- 🌟 新增密碼設定按鈕 -->
                 <button onclick="openPasswordModal()" class="bg-stone-500 text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-stone-600 shadow-sm transition">🔐 密碼</button>
-                
-                <button onclick="toggleHidePerfect()" id="btnHidePerfect" class="bg-white/60 text-stone-600 px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-white shadow-sm transition border border-white/80">👁️ 隱藏全過關</button>
+                <button onclick="toggleHidePerfect()" id="btnHidePerfect" class="bg-white/60 text-stone-600 px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-white shadow-sm transition border border-white/80">👁️ 隱藏過關</button>
             </div>
             
             <div id="dynamicInputGroup" class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0 transition-all">
@@ -125,6 +151,7 @@
         <div id="gradeView" class="scroll-section hidden"><table class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table></div>
         <div id="attView" class="scroll-section hidden"><table class="w-full"><thead id="attHeader"></thead><tbody id="attendanceBody"></tbody></table></div>
 
+        <!-- 報表區 -->
         <div id="reportPanel" class="report-section glass-panel sm:rounded-b-[2.5rem] report-open border-t-0">
             <div class="flex justify-center -mt-[2px] mb-2 shrink-0">
                 <button onclick="toggleReport()" class="bg-white/60 hover:bg-white/90 text-stone-500 px-6 py-1 rounded-b-xl shadow-sm text-xs font-bold transition flex items-center gap-2 border border-white/60 border-t-0 backdrop-blur-sm"><span id="reportToggleIcon">▼</span> <span id="reportToggleText">收起總覽面板</span></button>
@@ -142,43 +169,30 @@
         </div>
     </div>
 
-    <!-- 考試大鐘 -->
+    <!-- 其餘 Modals (考試大鐘, 密碼設定等) 保持不變 -->
     <div id="examClockOverlay" class="fixed inset-0 z-50 bg-[#f0ebe1] text-[#524c42] hidden flex-col transition-all duration-500 font-black">
         <div class="p-4 bg-[#e8e2d5] flex justify-between items-center shadow-sm border-b border-[#d3cabc] shrink-0">
             <h1 class="text-2xl md:text-3xl font-black text-[#8a4523] tracking-widest flex items-center gap-3"><span>⏱️</span> 考場電子看板</h1>
             <div class="flex gap-3 md:gap-4"><button onclick="toggleExamZoom('split')" class="text-sm md:text-base bg-[#9aa5b1] text-white hover:bg-[#7b8794] px-4 md:px-5 py-2.5 rounded-xl font-black transition shadow-sm">並排顯示</button><button onclick="toggleExamClock()" class="bg-[#e3a8a8] hover:bg-[#d69595] text-[#6e2727] px-5 md:px-7 py-2.5 rounded-xl text-base md:text-lg font-black shadow-md transition border border-[#d69595]">退出看板</button></div>
         </div>
         <div id="examContainer" class="flex flex-1 overflow-hidden flex-col md:flex-row bg-[#fdfcf9]">
-            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-8 flex flex-col relative">
-                <button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
-                <h2 class="text-2xl md:text-3xl font-black text-[#6b6356] mb-5 tracking-wide">📝 考科與時間</h2>
-                <textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400"></textarea>
-            </div>
-            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-8 flex items-center justify-center relative shadow-inner overflow-hidden">
-                <button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button>
-                <div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none">00:00:00</div>
-            </div>
+            <div id="examLeft" class="clock-panel w-full md:w-1/3 h-1/2 md:h-full border-b md:border-b-0 md:border-r border-[#d3cabc] bg-[#fdfcf9] p-8 flex flex-col relative"><button onclick="toggleExamZoom('left')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button><h2 class="text-2xl md:text-3xl font-black text-[#6b6356] mb-5 tracking-wide">📝 考科與時間</h2><textarea id="examScheduleInput" oninput="saveExamSchedule()" class="flex-1 w-full bg-transparent text-[#6b6356] text-3xl md:text-5xl font-black leading-relaxed resize-none outline-none placeholder-stone-400"></textarea></div>
+            <div id="examRight" class="clock-panel w-full md:w-2/3 h-1/2 md:h-full bg-[#f4f1ea] p-8 flex items-center justify-center relative shadow-inner overflow-hidden"><button onclick="toggleExamZoom('right')" class="absolute top-4 right-4 bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-1.5 rounded-lg text-sm font-black transition shadow-sm">🔍 放大</button><div id="hugeLiveClock" class="digital-clock-font text-[#524c42] tracking-tighter drop-shadow-sm clock-split leading-none">00:00:00</div></div>
         </div>
     </div>
 
-    <!-- 🌟 新增：密碼設定 Modal 🌟 -->
     <div id="passwordModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-lg shadow-2xl border border-white flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <h2 class="text-2xl font-black text-stone-700">🔐 家長查詢密碼設定</h2>
                 <button onclick="closePasswordModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
             </div>
-            <p class="text-sm font-bold text-stone-500 mb-4 shrink-0">請為每位學生設定身分證後4碼，預設為「0000」。家長需輸入正確密碼才能查詢該生資料。</p>
-            <div id="passwordList" class="flex-1 overflow-y-auto pr-2 space-y-2 border-y border-white/50 py-4 mb-4">
-                <!-- 密碼輸入框動態生成 -->
-            </div>
-            <div class="shrink-0 flex justify-end">
-                <button onclick="savePasswords()" class="bg-stone-600 text-white px-8 py-2.5 rounded-xl font-black text-base shadow-md hover:bg-stone-700 w-full">儲存並套用</button>
-            </div>
+            <p class="text-sm font-bold text-stone-500 mb-4 shrink-0">請為每位學生設定身分證後4碼，預設為「0000」。</p>
+            <div id="passwordList" class="flex-1 overflow-y-auto pr-2 space-y-2 border-y border-white/50 py-4 mb-4"></div>
+            <div class="shrink-0 flex justify-end"><button onclick="savePasswords()" class="bg-stone-600 text-white px-8 py-2.5 rounded-xl font-black text-base shadow-md hover:bg-stone-700 w-full">儲存並套用</button></div>
         </div>
     </div>
 
-    <!-- Modal 彈窗群 -->
     <div id="announceModal" class="fixed inset-0 z-50 bg-stone-900/40 hidden items-center justify-center backdrop-blur-md font-black">
         <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white">
             <div class="flex justify-between items-center mb-6">
@@ -202,6 +216,13 @@
     </div>
 
     <script>
+        // 🌟 縮放功能核心 🌟
+        function changeZoom(val) {
+            document.documentElement.style.setProperty('--zoom', val);
+            if(currentUser) { localStorage.setItem(`zoom_${currentUser.uid}`, val); }
+            else { localStorage.setItem('v35_local_zoom', val); }
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyB2jePwSyZH8xEux6mPc-LlYXoF7xJruIo",
             authDomain: "typhomeworksystem.firebaseapp.com",
@@ -219,10 +240,7 @@
         let examScheduleStr = "08:40 - 09:20 國語\n09:30 - 10:10 數學";
         let currentGradeSubject = '國語';
         let grades = { "國語": { categories: [], scores: {} }, "數學": { categories: [], scores: {} } };
-        let taskDates = {}; 
-        
-        // 🌟 新增密碼資料庫 🌟
-        let studentPasswords = {};
+        let taskDates = {}; let studentPasswords = {};
 
         let currentTab = 'task'; const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
         let isHidePerfect = false;
@@ -236,30 +254,15 @@
             if(document.getElementById('cleanBody')) { cleanSortable = new Sortable(document.getElementById('cleanBody'), { ...opts, onEnd: function (evt) { const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0]; cleanTasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
         }
 
-        // 🌟 密碼設定邏輯 🌟
         function openPasswordModal() {
-            const count = parseInt(document.getElementById('studentCount').value) || 0;
-            let html = '';
+            const count = parseInt(document.getElementById('studentCount').value) || 0; let html = '';
             for(let i=1; i<=count; i++) {
                 const pwd = studentPasswords[i] || '0000';
-                html += `<div class="flex justify-between items-center bg-white/60 p-3 rounded-xl border border-white">
-                    <span class="font-black text-stone-700 text-lg w-16 text-center">${i}號</span>
-                    <input type="text" id="pwd_${i}" value="${pwd}" maxlength="4" placeholder="0000" class="w-32 text-center font-black text-xl p-2 rounded-lg border-2 border-stone-200 outline-none focus:border-stone-500 bg-white/80 transition">
-                </div>`;
+                html += `<div class="flex justify-between items-center bg-white/60 p-3 rounded-xl border border-white"><span class="font-black text-stone-700 text-lg w-16 text-center">${i}號</span><input type="text" id="pwd_${i}" value="${pwd}" maxlength="4" placeholder="0000" class="w-32 text-center font-black text-xl p-2 rounded-lg border-2 border-stone-200 outline-none focus:border-stone-500 bg-white/80 transition"></div>`;
             }
-            document.getElementById('passwordList').innerHTML = html;
-            document.getElementById('passwordModal').classList.replace('hidden', 'flex');
+            document.getElementById('passwordList').innerHTML = html; document.getElementById('passwordModal').classList.replace('hidden', 'flex');
         }
-
-        function savePasswords() {
-            const count = parseInt(document.getElementById('studentCount').value) || 0;
-            for(let i=1; i<=count; i++) {
-                studentPasswords[i] = document.getElementById(`pwd_${i}`).value || '0000';
-            }
-            saveToCloud();
-            document.getElementById('passwordModal').classList.replace('flex', 'hidden');
-        }
-
+        function savePasswords() { const count = parseInt(document.getElementById('studentCount').value) || 0; for(let i=1; i<=count; i++) { studentPasswords[i] = document.getElementById(`pwd_${i}`).value || '0000'; } saveToCloud(); document.getElementById('passwordModal').classList.replace('flex', 'hidden'); }
         function closePasswordModal() { document.getElementById('passwordModal').classList.replace('flex', 'hidden'); }
 
         function saveToCloud() {
@@ -276,16 +279,13 @@
                 }
             }); grades = safeGrades;
 
-            // 加入密碼資料
             const data = { tasks, taskDates, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, grades, studentPasswords, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
             db.ref('users/' + currentUser.uid).set(data).catch(err => console.error("同步失敗:", err));
-            
-            // 🌟 廣播給家長端 🌟
             db.ref('public_board/my_class').set(data);
         }
 
         function toggleAnnounceDrawer(show) { const drawer = document.getElementById('announceDrawer'); const backdrop = document.getElementById('drawerBackdrop'); if (show) { drawer.classList.add('drawer-open'); backdrop.classList.add('backdrop-show'); document.getElementById('announceDot').classList.add('hidden'); } else { drawer.classList.remove('drawer-open'); backdrop.classList.remove('backdrop-show'); } }
-        function toggleHidePerfect() { isHidePerfect = !isHidePerfect; document.getElementById('btnHidePerfect').innerText = isHidePerfect ? '👁️ 顯示全班' : '👁️ 隱藏全過關'; document.getElementById('btnHidePerfect').classList.toggle('bg-[#dfa888]', isHidePerfect); document.getElementById('btnHidePerfect').classList.toggle('text-white', isHidePerfect); renderAll(); }
+        function toggleHidePerfect() { isHidePerfect = !isHidePerfect; document.getElementById('btnHidePerfect').innerText = isHidePerfect ? '👁️ 顯示全班' : '👁️ 隱藏過關'; document.getElementById('btnHidePerfect').classList.toggle('bg-[#dfa888]', isHidePerfect); document.getElementById('btnHidePerfect').classList.toggle('text-white', isHidePerfect); renderAll(); }
         function getLocalDateString() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
         document.getElementById('currentDate').value = getLocalDateString();
         setInterval(() => { const timeStr = new Date().toLocaleTimeString('zh-TW', {hour12: false}); document.getElementById('liveClock').innerText = timeStr; if(document.getElementById('hugeLiveClock')) document.getElementById('hugeLiveClock').innerText = timeStr; }, 1000);
@@ -297,7 +297,13 @@
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user; document.getElementById('loginScreen').style.opacity = '0'; setTimeout(() => document.getElementById('loginScreen').style.display = 'none', 500);
-                document.getElementById('mainApp').classList.remove('opacity-0', 'pointer-events-none'); startDatabaseSync();
+                document.getElementById('mainApp').classList.remove('opacity-0', 'pointer-events-none'); 
+                
+                // 載入該帳號的縮放設定
+                const savedZoom = localStorage.getItem(`zoom_${currentUser.uid}`);
+                if(savedZoom) { document.getElementById('uiZoom').value = savedZoom; changeZoom(savedZoom); }
+
+                startDatabaseSync();
             } else {
                 currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
                 document.getElementById('mainApp').classList.add('opacity-0', 'pointer-events-none');
@@ -314,10 +320,8 @@
                 if (data) {
                     if (data.announcements && data.announcements !== announcements && isFirstLoad === false) { document.getElementById('announceDot').classList.remove('hidden'); }
                     
-                    tasks = data.tasks || []; globalTaskData = data.globalTaskData || {}; taskDates = data.taskDates || {};
-                    studentPasswords = data.studentPasswords || {}; // 載入密碼
-                    historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || "";
-                    cleanTasks = data.cleanTasks || []; historyClean = data.historyClean || {};
+                    tasks = data.tasks || []; globalTaskData = data.globalTaskData || {}; taskDates = data.taskDates || {}; studentPasswords = data.studentPasswords || {}; 
+                    historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || ""; cleanTasks = data.cleanTasks || []; historyClean = data.historyClean || {};
                     
                     let oldGrades = data.grades || {};
                     ["國語", "數學"].forEach(sub => {
@@ -369,7 +373,7 @@
 
         function renderGrades() {
             const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
-            let h1 = `<tr><th class="sticky-cross min-w-[80px] text-center text-lg font-black bg-[#fdfcf9]" rowspan="2">座號</th>`; let h2 = `<tr>`;
+            let h1 = `<tr><th class="sticky-cross text-center bg-[#fdfcf9] student-th" rowspan="2">座號</th>`; let h2 = `<tr>`;
             if(subData.categories.length === 0) { h1 += `<th class="text-stone-400 font-bold p-4 bg-white/50">請在上方輸入大項目名稱後點擊「加主項目」</th>`; h2 += `<th class="hidden"></th>`; }
             subData.categories.forEach((cat, cIdx) => {
                 const cols = cat.exams.length > 0 ? cat.exams.length + 1 : 1;
@@ -381,7 +385,7 @@
                     cat.exams.forEach((ex, eIdx) => {
                         h2 += `<th class="bg-white/50 border-r border-white/50 p-2 min-w-[90px]">
                             <div class="font-black text-stone-700 text-base flex justify-center items-center gap-1">${ex.name} <button onclick="deleteSubExam(${cIdx}, ${eIdx})" class="text-[10px] text-red-400 hover:text-red-600">✕</button></div>
-                            <div class="text-xs font-bold text-stone-500 mt-0.5 flex justify-center items-center gap-1">權 <input type="number" class="weight-input w-[35px]" value="${ex.weight}" onchange="updateSubWeight(${cIdx}, ${eIdx}, this.value)" min="0" step="0.1"></div>
+                            <div class="text-xs font-bold text-stone-500 mt-0.5 flex justify-center items-center gap-1">權 <input type="number" class="weight-input" value="${ex.weight}" onchange="updateSubWeight(${cIdx}, ${eIdx}, this.value)" min="0" step="0.1"></div>
                             <button onclick="linearAdjust(${cIdx}, ${eIdx})" class="mt-1.5 text-[10px] bg-[#dfa888] text-white px-2 py-0.5 rounded shadow-sm hover:bg-[#c99070]">🪄 調分</button>
                         </th>`;
                     });
@@ -448,7 +452,7 @@
             for(let i=1; i<=count; i++) { let isPerfect = true; tasks.forEach(t => { if((globalTaskData[i] && globalTaskData[i][t]) !== 2) isPerfect = false; }); if(!isPerfect) imperfectSids.add(i); }
 
             let studentsHeader = '';
-            for(let i = 1; i <= count; i++) { if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue; studentsHeader += `<th class="sticky-top min-w-[75px] text-lg font-black">${i}號</th>`; }
+            for(let i = 1; i <= count; i++) { if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue; studentsHeader += `<th class="sticky-top student-th text-center font-black">${i}號</th>`; }
 
             const tBody = document.getElementById('taskBody'); document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`; tBody.innerHTML = '';
             tasks.forEach((t, index) => {
