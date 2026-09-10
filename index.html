@@ -127,6 +127,7 @@
                 <button onclick="openNoteModal()" class="bg-[#9aa5b1] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#7b8794] shadow-sm transition">📝 記事</button>
                 <button onclick="openPasswordModal()" class="bg-stone-500 text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-stone-600 shadow-sm transition">🔐 密碼</button>
                 <button onclick="toggleHidePerfect()" id="btnHidePerfect" class="bg-white/60 text-stone-600 px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-white shadow-sm transition border border-white/80">👁️ 隱藏過關</button>
+                <button onclick="showAllHiddenTaskStudents()" id="btnShowHiddenStudents" class="hidden bg-emerald-500/90 text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-emerald-600 shadow-sm transition border border-emerald-600/40">🙈 已隱藏 <span id="hiddenStudentCount">0</span> 位（點擊還原）</button>
             </div>
             
             <div id="dynamicInputGroup" class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0 transition-all">
@@ -244,6 +245,7 @@
 
         let currentTab = 'task'; const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
         let isHidePerfect = false;
+        let manuallyHiddenTaskStudents = new Set();
         let taskSortable = null; let cleanSortable = null; let pendingNextFocusIndex = null;
 
         function initSortable() {
@@ -286,6 +288,8 @@
 
         function toggleAnnounceDrawer(show) { const drawer = document.getElementById('announceDrawer'); const backdrop = document.getElementById('drawerBackdrop'); if (show) { drawer.classList.add('drawer-open'); backdrop.classList.add('backdrop-show'); document.getElementById('announceDot').classList.add('hidden'); } else { drawer.classList.remove('drawer-open'); backdrop.classList.remove('backdrop-show'); } }
         function toggleHidePerfect() { isHidePerfect = !isHidePerfect; document.getElementById('btnHidePerfect').innerText = isHidePerfect ? '👁️ 顯示全班' : '👁️ 隱藏過關'; document.getElementById('btnHidePerfect').classList.toggle('bg-[#dfa888]', isHidePerfect); document.getElementById('btnHidePerfect').classList.toggle('text-white', isHidePerfect); renderAll(); }
+        function hideStudentTask(id) { manuallyHiddenTaskStudents.add(id); renderAll(); }
+        function showAllHiddenTaskStudents() { manuallyHiddenTaskStudents.clear(); renderAll(); }
         function getLocalDateString() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
         document.getElementById('currentDate').value = getLocalDateString();
         setInterval(() => { const timeStr = new Date().toLocaleTimeString('zh-TW', {hour12: false}); document.getElementById('liveClock').innerText = timeStr; if(document.getElementById('hugeLiveClock')) document.getElementById('hugeLiveClock').innerText = timeStr; }, 1000);
@@ -349,8 +353,8 @@
 
         function switchTab(tab) {
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
-            const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnAdd = document.getElementById('btnAddItem');
-            if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); }
+            const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem');
+            if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active text-[#8a4523]' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
             if(tab === 'grade') renderGrades();
@@ -451,16 +455,25 @@
             let imperfectSids = new Set();
             for(let i=1; i<=count; i++) { let isPerfect = true; tasks.forEach(t => { if((globalTaskData[i] && globalTaskData[i][t]) !== 2) isPerfect = false; }); if(!isPerfect) imperfectSids.add(i); }
 
+            // 若學生已不再是「全部完成」(例如新增了作業)，自動移出手動隱藏名單，讓未完成者重新顯現
+            Array.from(manuallyHiddenTaskStudents).forEach(sid => { if(imperfectSids.has(sid)) manuallyHiddenTaskStudents.delete(sid); });
+            const btnShowHidden = document.getElementById('btnShowHiddenStudents');
+            if(btnShowHidden) { document.getElementById('hiddenStudentCount').innerText = manuallyHiddenTaskStudents.size; btnShowHidden.classList.toggle('hidden', currentTab !== 'task' || manuallyHiddenTaskStudents.size === 0); }
+
             let studentsHeader = '';
-            for(let i = 1; i <= count; i++) { if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue; studentsHeader += `<th class="sticky-top student-th text-center font-black">${i}號</th>`; }
+            for(let i = 1; i <= count; i++) {
+                if(currentTab === 'task' && (isHidePerfect && !imperfectSids.has(i) || manuallyHiddenTaskStudents.has(i))) continue;
+                const hideBtn = (currentTab === 'task' && !imperfectSids.has(i)) ? `<button onclick="hideStudentTask(${i})" class="block mx-auto mt-0.5 text-[10px] leading-none text-emerald-600 hover:text-emerald-800" title="此生作業已全部完成，點擊暫時隱藏">🙈 隱藏</button>` : '';
+                studentsHeader += `<th class="sticky-top student-th text-center font-black">${i}號${hideBtn}</th>`;
+            }
 
             const tBody = document.getElementById('taskBody'); document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`; tBody.innerHTML = '';
             tasks.forEach((t, index) => {
                 const dateStr = taskDates[t] ? `<div class="text-[11px] font-bold text-stone-500/80 mt-0.5 tracking-wider font-mono">${taskDates[t]}</div>` : '';
                 let row = `<tr class="bg-white/10"><td class="sticky-left p-3 md:p-4 border-b border-white/50"><div class="flex items-start gap-2 mb-2"><span class="drag-handle text-stone-400 hover:text-[#dfa888] text-xl px-1 mt-1">⋮⋮</span><div><div class="font-black text-stone-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>${dateStr}</div></div><div class="flex gap-2 pl-6"><button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white shadow-sm">✔ 全完成</button><button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] shadow-sm">✕</button></div></td>`;
-                for (let i = 1; i <= count; i++) { 
-                    if(currentTab === 'task' && isHidePerfect && !imperfectSids.has(i)) continue; 
-                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0; 
+                for (let i = 1; i <= count; i++) {
+                    if(currentTab === 'task' && (isHidePerfect && !imperfectSids.has(i) || manuallyHiddenTaskStudents.has(i))) continue;
+                    const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
                     const lbls = {0: "未交", 1: "待訂", 2: "完成", 3: "批改中"}; 
                     row += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`; 
                 }
