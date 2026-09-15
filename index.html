@@ -128,6 +128,7 @@
                 <button onclick="openPasswordModal()" class="bg-stone-500 text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-stone-600 shadow-sm transition">🔐 密碼</button>
                 <button onclick="toggleHidePerfect()" id="btnHidePerfect" class="bg-white/60 text-stone-600 px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-white shadow-sm transition border border-white/80">👁️ 隱藏過關</button>
                 <button onclick="showAllHiddenTaskStudents()" id="btnShowHiddenStudents" class="hidden bg-emerald-500/90 text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-emerald-600 shadow-sm transition border border-emerald-600/40">🙈 已隱藏 <span id="hiddenStudentCount">0</span> 位（點擊還原）</button>
+                <button onclick="openReminderModal()" id="btnReminder" class="bg-[#a3c1da] text-white px-3 py-1.5 rounded-xl font-black text-xs md:text-sm hover:bg-[#8fb0cc] shadow-sm transition">📨 作業繳交提醒</button>
             </div>
             
             <div id="dynamicInputGroup" class="flex gap-2 w-full sm:w-auto mt-1 sm:mt-0 transition-all">
@@ -213,6 +214,25 @@
             </div>
             <textarea id="dailyNoteText" class="w-full h-72 p-6 border border-white/80 rounded-xl outline-none focus:border-[#9aa5b1] resize-none text-xl font-bold text-stone-700 bg-white/80"></textarea>
             <div class="mt-8 flex justify-end"><button onclick="saveAndCloseNote()" class="bg-[#6b6356] text-white px-8 py-2.5 rounded-xl font-black text-base shadow-md hover:bg-[#524c42]">🔒 儲存並隱藏</button></div>
+        </div>
+    </div>
+
+    <div id="reminderModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-2xl shadow-2xl border border-white flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h2 class="text-2xl font-black text-[#2c4a6b]">📨 作業繳交提醒</h2>
+                <button onclick="closeReminderModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
+            </div>
+            <div class="flex items-center gap-2 mb-4 shrink-0">
+                <label class="text-sm font-bold text-stone-600 shrink-0">選擇座號：</label>
+                <select id="reminderStudentSelect" onchange="updateReminderPreview()" class="flex-1 p-2 border border-white/80 rounded-xl font-black outline-none bg-white/70 text-stone-700"></select>
+            </div>
+            <div id="reminderEmptyState" class="hidden text-center text-stone-400 italic font-bold py-16">這位同學目前作業都已完成，不需要提醒喔！🎉</div>
+            <textarea id="reminderTextarea" class="w-full h-64 p-5 border border-white/80 rounded-xl outline-none focus:border-[#a3c1da] resize-none text-base font-bold text-stone-700 bg-white/70 leading-relaxed"></textarea>
+            <div class="mt-5 flex gap-3 shrink-0">
+                <button onclick="copyReminderText()" class="flex-1 bg-white/80 text-stone-600 py-3 rounded-xl font-black text-base shadow-sm hover:bg-white border border-stone-200 transition">📋 複製文字</button>
+                <button onclick="sendReminderLine()" id="btnSendLine" class="flex-1 bg-[#06C755] text-white py-3 rounded-xl font-black text-base shadow-md hover:bg-[#05b34c] transition">💬 用 LINE 傳送</button>
+            </div>
         </div>
     </div>
 
@@ -353,8 +373,9 @@
 
         function switchTab(tab) {
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
-            const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem');
+            const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
+            btnReminder.classList.toggle('hidden', tab !== 'task');
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active text-[#8a4523]' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
             if(tab === 'grade') renderGrades();
@@ -367,6 +388,55 @@
         function openNoteModal() { const date = document.getElementById('currentDate').value; document.getElementById('noteDateDisplay').innerText = date; document.getElementById('dailyNoteText').value = dailyNotes[date] || ''; document.getElementById('noteModal').classList.replace('hidden', 'flex'); }
         function closeNoteModal() { document.getElementById('noteModal').classList.replace('flex', 'hidden'); }
         function saveAndCloseNote() { const date = document.getElementById('currentDate').value; const text = document.getElementById('dailyNoteText').value.trim(); if (text) dailyNotes[date] = text; else delete dailyNotes[date]; saveToCloud(); closeNoteModal(); }
+
+        function getIncompleteTasksForStudent(sid) {
+            let missing = []; let correction = [];
+            tasks.forEach(t => { const s = (globalTaskData[sid] && globalTaskData[sid][t]) || 0; if(s === 0) missing.push(t); else if(s === 1) correction.push(t); });
+            return { missing, correction };
+        }
+
+        function buildReminderMessage(sid) {
+            const { missing, correction } = getIncompleteTasksForStudent(sid);
+            if(missing.length === 0 && correction.length === 0) return '';
+            let lines = [`${sid}號家長您好😊`, '', '老師想跟您說一下，孩子目前還有幾項作業需要協助關心，麻煩您在家提醒孩子盡快完成，謝謝您的配合🙏'];
+            if(missing.length > 0) { lines.push(''); lines.push('【尚未繳交】'); missing.forEach(t => lines.push(`．${t}`)); }
+            if(correction.length > 0) { lines.push(''); lines.push('【需要訂正】'); correction.forEach(t => lines.push(`．${t}`)); }
+            lines.push(''); lines.push('若孩子有任何狀況，也歡迎隨時與老師聯繫，謝謝您的用心😊');
+            return lines.join('\n');
+        }
+
+        function openReminderModal() {
+            const count = parseInt(document.getElementById('studentCount').value) || 0;
+            const select = document.getElementById('reminderStudentSelect');
+            let html = ''; let firstIncomplete = null;
+            for(let i=1; i<=count; i++) {
+                const { missing, correction } = getIncompleteTasksForStudent(i); const n = missing.length + correction.length;
+                if(n > 0 && firstIncomplete === null) firstIncomplete = i;
+                html += `<option value="${i}">${i}號 ${n > 0 ? `（未完成 ${n} 項）` : '（已全部完成）'}</option>`;
+            }
+            select.innerHTML = html; select.value = firstIncomplete !== null ? firstIncomplete : 1;
+            updateReminderPreview(); document.getElementById('reminderModal').classList.replace('hidden', 'flex');
+        }
+        function closeReminderModal() { document.getElementById('reminderModal').classList.replace('flex', 'hidden'); }
+
+        function updateReminderPreview() {
+            const sid = parseInt(document.getElementById('reminderStudentSelect').value);
+            const msg = buildReminderMessage(sid);
+            const textarea = document.getElementById('reminderTextarea'); const emptyState = document.getElementById('reminderEmptyState'); const btnSend = document.getElementById('btnSendLine');
+            if(!msg) { textarea.classList.add('hidden'); emptyState.classList.remove('hidden'); btnSend.disabled = true; btnSend.classList.add('opacity-40', 'cursor-not-allowed'); }
+            else { textarea.classList.remove('hidden'); emptyState.classList.add('hidden'); textarea.value = msg; btnSend.disabled = false; btnSend.classList.remove('opacity-40', 'cursor-not-allowed'); }
+        }
+
+        function copyReminderText() {
+            const textarea = document.getElementById('reminderTextarea'); if(textarea.classList.contains('hidden') || !textarea.value) return;
+            textarea.select();
+            (navigator.clipboard?.writeText(textarea.value) || Promise.reject()).then(() => alert('已複製到剪貼簿！')).catch(() => { document.execCommand('copy'); alert('已複製到剪貼簿！'); });
+        }
+
+        function sendReminderLine() {
+            const textarea = document.getElementById('reminderTextarea'); if(textarea.classList.contains('hidden') || !textarea.value) return;
+            window.open(`https://line.me/R/msg/text/?${encodeURIComponent(textarea.value)}`, '_blank');
+        }
 
         function handleGradeEnter(e) {
             if (e.key === 'Enter') {
