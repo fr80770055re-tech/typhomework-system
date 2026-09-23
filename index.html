@@ -452,13 +452,13 @@
             subData.categories.forEach((cat, cIdx) => {
                 const cols = cat.exams.length > 0 ? cat.exams.length + 1 : 1;
                 h1 += `<th colspan="${cols}" class="border-x border-white/80 text-center bg-[#f4f1ea]">
-                    <div class="flex justify-center items-center gap-2"><span class="text-xl font-black text-[#8a4523]">${cat.name}</span><button onclick="deleteCat(${cIdx})" class="text-[10px] bg-[#e3a8a8] text-[#6e2727] px-1.5 py-0.5 rounded shadow-sm hover:bg-[#d69595]">刪除大項</button></div>
+                    <div class="flex justify-center items-center gap-2"><span class="text-xl font-black text-[#8a4523]">${cat.name}</span><button onclick="renameCat(${cIdx})" class="text-[10px] bg-white text-[#6b6356] px-1.5 py-0.5 rounded shadow-sm hover:bg-stone-100" title="改名">✏️ 改名</button><button onclick="deleteCat(${cIdx})" class="text-[10px] bg-[#e3a8a8] text-[#6e2727] px-1.5 py-0.5 rounded shadow-sm hover:bg-[#d69595]">刪除大項</button></div>
                     <div class="text-sm font-bold mt-1 text-stone-600 flex items-center justify-center gap-2"><span>權重 <input type="number" class="weight-input" value="${cat.weight}" onchange="updateCatWeight(${cIdx}, this.value)" min="0" step="0.1"></span><span class="text-stone-300">|</span><button onclick="addSubExam(${cIdx})" class="text-xs bg-white text-[#6b6356] px-2 py-1 rounded shadow-sm hover:bg-stone-100">+ 加小項</button></div>
                 </th>`;
                 if(cat.exams.length === 0) { h2 += `<th class="bg-white/40 text-stone-400 text-sm py-2">尚未新增小項</th>`; } else {
                     cat.exams.forEach((ex, eIdx) => {
                         h2 += `<th class="bg-white/50 border-r border-white/50 p-2 min-w-[90px]">
-                            <div class="font-black text-stone-700 text-base flex justify-center items-center gap-1">${ex.name} <button onclick="deleteSubExam(${cIdx}, ${eIdx})" class="text-[10px] text-red-400 hover:text-red-600">✕</button></div>
+                            <div class="font-black text-stone-700 text-base flex justify-center items-center gap-1">${ex.name} <button onclick="renameSubExam(${cIdx}, ${eIdx})" class="text-[10px] text-stone-400 hover:text-stone-600" title="改名">✏️</button><button onclick="deleteSubExam(${cIdx}, ${eIdx})" class="text-[10px] text-red-400 hover:text-red-600">✕</button></div>
                             <div class="text-xs font-bold text-stone-500 mt-0.5 flex justify-center items-center gap-1">權 <input type="number" class="weight-input" value="${ex.weight}" onchange="updateSubWeight(${cIdx}, ${eIdx}, this.value)" min="0" step="0.1"></div>
                             <button onclick="linearAdjust(${cIdx}, ${eIdx})" class="mt-1.5 text-[10px] bg-[#dfa888] text-white px-2 py-0.5 rounded shadow-sm hover:bg-[#c99070]">🪄 調分</button>
                         </th>`;
@@ -493,12 +493,40 @@
             document.getElementById('gradeBody').innerHTML = gBody;
         }
 
-        function updateCatWeight(cIdx, val) { grades[currentGradeSubject].categories[cIdx].weight = val; saveToCloud(); }
-        function updateSubWeight(cIdx, eIdx, val) { grades[currentGradeSubject].categories[cIdx].exams[eIdx].weight = val; saveToCloud(); }
-        function updateScore(sid, key, val) { if(!grades[currentGradeSubject].scores[sid]) grades[currentGradeSubject].scores[sid] = {}; grades[currentGradeSubject].scores[sid][key] = val; saveToCloud(); }
-        function deleteCat(cIdx) { if(confirm('確定刪除這個大項目嗎？底下的所有小項成績都會消失喔！')) { grades[currentGradeSubject].categories.splice(cIdx, 1); saveToCloud(); } }
-        function deleteSubExam(cIdx, eIdx) { if(confirm('確定刪除此小項成績？')) { grades[currentGradeSubject].categories[cIdx].exams.splice(eIdx, 1); saveToCloud(); } }
-        function addSubExam(cIdx) { let name = prompt("請輸入小項名稱 (例如: CH1 或 L1)："); if(name) { name = name.trim().replace(/[.#$/\[\]]/g, '_'); if(!grades[currentGradeSubject].categories[cIdx].exams) grades[currentGradeSubject].categories[cIdx].exams = []; if(grades[currentGradeSubject].categories[cIdx].exams.find(e => e.name === name)) return alert("名稱已存在！"); grades[currentGradeSubject].categories[cIdx].exams.push({ name: name, weight: 1 }); saveToCloud(); } }
+        function updateCatWeight(cIdx, val) { grades[currentGradeSubject].categories[cIdx].weight = val; renderGrades(); saveToCloud(); }
+        function updateSubWeight(cIdx, eIdx, val) { grades[currentGradeSubject].categories[cIdx].exams[eIdx].weight = val; renderGrades(); saveToCloud(); }
+        function updateScore(sid, key, val) { if(!grades[currentGradeSubject].scores[sid]) grades[currentGradeSubject].scores[sid] = {}; grades[currentGradeSubject].scores[sid][key] = val; renderAll(); saveToCloud(); }
+        function deleteCat(cIdx) { if(confirm('確定刪除這個大項目嗎？底下的所有小項成績都會消失喔！')) { grades[currentGradeSubject].categories.splice(cIdx, 1); renderGrades(); saveToCloud(); } }
+        function deleteSubExam(cIdx, eIdx) { if(confirm('確定刪除此小項成績？')) { grades[currentGradeSubject].categories[cIdx].exams.splice(eIdx, 1); renderGrades(); saveToCloud(); } }
+        function addSubExam(cIdx) { let name = prompt("請輸入小項名稱 (例如: CH1 或 L1)："); if(name) { name = name.trim().replace(/[.#$/\[\]]/g, '_'); if(!grades[currentGradeSubject].categories[cIdx].exams) grades[currentGradeSubject].categories[cIdx].exams = []; if(grades[currentGradeSubject].categories[cIdx].exams.find(e => e.name === name)) return alert("名稱已存在！"); grades[currentGradeSubject].categories[cIdx].exams.push({ name: name, weight: 1 }); renderGrades(); saveToCloud(); } }
+
+        // 改名時需同步搬移該大項/小項底下所有學生的成績資料（存放的 key 是用名稱組成的），否則改名後舊成績會找不到
+        function renameCat(cIdx) {
+            const subData = grades[currentGradeSubject]; const cat = subData.categories[cIdx];
+            let newName = prompt("請輸入新的大項名稱：", cat.name); if(newName === null) return;
+            newName = newName.trim().replace(/[.#$/\[\]]/g, '_');
+            if(!newName) return alert("名稱不可為空！");
+            if(newName === cat.name) return;
+            if(subData.categories.some((c, idx) => idx !== cIdx && c.name === newName)) return alert("名稱已存在！");
+            const oldName = cat.name; cat.name = newName;
+            for(let sid in subData.scores) {
+                for(let key in subData.scores[sid]) {
+                    if(key.startsWith(oldName + '_')) { const newKey = newName + key.slice(oldName.length); subData.scores[sid][newKey] = subData.scores[sid][key]; delete subData.scores[sid][key]; }
+                }
+            }
+            renderGrades(); saveToCloud();
+        }
+        function renameSubExam(cIdx, eIdx) {
+            const subData = grades[currentGradeSubject]; const cat = subData.categories[cIdx]; const ex = cat.exams[eIdx];
+            let newName = prompt("請輸入新的小項名稱：", ex.name); if(newName === null) return;
+            newName = newName.trim().replace(/[.#$/\[\]]/g, '_');
+            if(!newName) return alert("名稱不可為空！");
+            if(newName === ex.name) return;
+            if(cat.exams.some((e, idx) => idx !== eIdx && e.name === newName)) return alert("名稱已存在！");
+            const oldKey = `${cat.name}_${ex.name}`; const newKey = `${cat.name}_${newName}`; ex.name = newName;
+            for(let sid in subData.scores) { if(subData.scores[sid] && subData.scores[sid][oldKey] !== undefined) { subData.scores[sid][newKey] = subData.scores[sid][oldKey]; delete subData.scores[sid][oldKey]; } }
+            renderGrades(); saveToCloud();
+        }
 
         function linearAdjust(cIdx, eIdx) {
             const count = parseInt(document.getElementById('studentCount').value) || 0; const subData = grades[currentGradeSubject]; const cat = subData.categories[cIdx]; const ex = cat.exams[eIdx]; const key = `${cat.name}_${ex.name}`; let validScores = [];
@@ -507,7 +535,7 @@
             const max = Math.max(...validScores); const min = Math.min(...validScores);
             if(max === min) return alert("全班分數都一樣，無法使用線性調分公式！");
             if(confirm(`針對【${ex.name}】進行線性調分：\n最低分(${min}分) ⇨ 60分\n最高分(${max}分) ⇨ 97分\n\n確定執行？`)) {
-                for(let i=1; i<=count; i++) { const s = subData.scores[i]?.[key]; if(s !== undefined && s !== null && s !== "") { let raw = Number(s); let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60); subData.scores[i][key] = Math.min(100, Math.max(0, adj)); } } saveToCloud();
+                for(let i=1; i<=count; i++) { const s = subData.scores[i]?.[key]; if(s !== undefined && s !== null && s !== "") { let raw = Number(s); let adj = Math.round(((raw - min) / (max - min)) * (97 - 60) + 60); subData.scores[i][key] = Math.min(100, Math.max(0, adj)); } } renderGrades(); saveToCloud();
             }
         }
 
@@ -537,7 +565,7 @@
                 studentsHeader += `<th class="sticky-top student-th text-center font-black">${i}號${hideBtn}</th>`;
             }
 
-            const tBody = document.getElementById('taskBody'); document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`; tBody.innerHTML = '';
+            const tBody = document.getElementById('taskBody'); document.getElementById('taskHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg">📝 作業名稱</th>${studentsHeader}</tr>`; let tBodyHtml = '';
             tasks.forEach((t, index) => {
                 const dateStr = taskDates[t] ? `<div class="text-[11px] font-bold text-stone-500/80 mt-0.5 tracking-wider font-mono">${taskDates[t]}</div>` : '';
                 let row = `<tr class="bg-white/10"><td class="sticky-left p-3 md:p-4 border-b border-white/50"><div class="flex items-start gap-2 mb-2"><span class="drag-handle text-stone-400 hover:text-[#dfa888] text-xl px-1 mt-1">⋮⋮</span><div><div class="font-black text-stone-800 text-base md:text-lg leading-tight mt-0.5">${t}</div>${dateStr}</div></div><div class="flex gap-2 pl-6"><button onclick="completeAllTask('${t}')" class="text-xs font-bold bg-white/70 text-stone-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-white shadow-sm">✔ 全完成</button><button onclick="deleteTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] shadow-sm">✕</button></div></td>`;
@@ -547,37 +575,40 @@
                     const lbls = {0: "未交", 1: "待訂", 2: "完成", 3: "批改中"}; 
                     row += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleTask(${i},'${t}')" class="state-btn task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`; 
                 }
-                tBody.innerHTML += row + '</tr>';
+                tBodyHtml += row + '</tr>';
             });
+            tBody.innerHTML = tBodyHtml;
 
-            const cBody = document.getElementById('cleanBody'); document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`; cBody.innerHTML = '';
+            const cBody = document.getElementById('cleanBody'); document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross w-64 text-left pl-6 text-base md:text-lg text-emerald-800">🧹 股長檢核項目</th>${studentsHeader}</tr>`; let cBodyHtml = '';
             cleanTasks.forEach((t, index) => {
                 let row = `<tr class="bg-white/10"><td class="sticky-left p-3 md:p-4 border-b border-white/50"><div class="flex items-start gap-2 mb-2"><span class="drag-handle text-stone-400 hover:text-emerald-500 text-xl px-1">⋮⋮</span><div class="font-black text-emerald-800 text-base md:text-lg leading-tight mt-0.5">${t}</div></div><div class="flex gap-2 pl-6"><button onclick="completeAllClean('${t}')" class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1.5 rounded-lg flex-1 hover:bg-emerald-200 shadow-sm">✔ 全過關</button><button onclick="deleteCleanTask(${index})" class="text-xs font-bold bg-[#e3a8a8]/80 text-[#6e2727] px-2 py-1.5 rounded-lg hover:bg-[#d69595] shadow-sm">✕</button></div></td>`;
                 for (let i = 1; i <= count; i++) { const s = (todaysClean[i] && todaysClean[i][t]) || 0; const lbls = ["未完成", "完成"]; row += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleClean(${i},'${t}')" class="state-btn clean-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`; }
-                cBody.innerHTML += row + '</tr>';
+                cBodyHtml += row + '</tr>';
             });
+            cBody.innerHTML = cBodyHtml;
 
             const aBody = document.getElementById('attendanceBody'); document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross w-56 text-left pl-4 text-base md:text-lg">📅 出勤項目</th>${studentsHeader}</tr>`; let attRow = `<tr><td class="sticky-left p-3 md:p-5 border-b border-white/50"><div class="font-black text-stone-800 text-base md:text-lg">今日狀態</div></td>`;
             for (let i = 1; i <= count; i++) { const s = todaysAtt[i] || 0; attRow += `<td class="p-1.5 md:p-2 border-b border-white/50"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`; } aBody.innerHTML = attRow + '</tr>';
 
             if(currentTab === 'grade') renderGrades();
 
-            const tReport = document.getElementById('taskReport'); const aReport = document.getElementById('attReport'); tReport.innerHTML = ''; aReport.innerHTML = ''; 
-            
+            const tReport = document.getElementById('taskReport'); const aReport = document.getElementById('attReport'); let tReportHtml = ''; aReport.innerHTML = '';
+
             tasks.forEach(t => {
                 let missing = []; let correction = []; let grading = [];
                 for (let i = 1; i <= count; i++) { const s = (globalTaskData[i] || {})[t] || 0; if (s === 0) missing.push(i); else if (s === 1) correction.push(i); else if (s === 3) grading.push(i); }
-                
-                if (missing.length === 0 && correction.length === 0) { 
-                    tReport.innerHTML += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員交齊 ✓ ${grading.length > 0 ? `<span class="text-[#5c3a6b] font-bold text-xs ml-2 bg-[#d8b4e2]/30 px-2 py-0.5 rounded">批改中: ${grading.length}人</span>` : ''}</div>`; 
+
+                if (missing.length === 0 && correction.length === 0) {
+                    tReportHtml += `<div class="text-[#63776d] font-black italic mb-2">【${t}】 全員交齊 ✓ ${grading.length > 0 ? `<span class="text-[#5c3a6b] font-bold text-xs ml-2 bg-[#d8b4e2]/30 px-2 py-0.5 rounded">批改中: ${grading.length}人</span>` : ''}</div>`;
                 } else {
                     let reportHtml = `<div class="mb-3 border-l-[4px] border-[#dfa888] pl-3 bg-white/70 py-2 rounded-r-lg"><div class="text-stone-800 font-black mb-1 text-base">【${t}】</div>`;
-                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-bold">未交：${missing.join(', ')} 號</div>`; 
-                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-bold mt-1">待訂正：${correction.join(', ')} 號</div>`; 
-                    if (grading.length > 0) reportHtml += `<div class="text-[#5c3a6b] font-bold mt-1 text-xs">批改中：${grading.join(', ')} 號</div>`; 
-                    tReport.innerHTML += reportHtml + `</div>`;
+                    if (missing.length > 0) reportHtml += `<div class="text-stone-500 font-bold">未交：${missing.join(', ')} 號</div>`;
+                    if (correction.length > 0) reportHtml += `<div class="text-[#8a4523] font-bold mt-1">待訂正：${correction.join(', ')} 號</div>`;
+                    if (grading.length > 0) reportHtml += `<div class="text-[#5c3a6b] font-bold mt-1 text-xs">批改中：${grading.join(', ')} 號</div>`;
+                    tReportHtml += reportHtml + `</div>`;
                 }
             });
+            tReport.innerHTML = tReportHtml;
             let atts = []; for(let i=1; i<=count; i++) if(todaysAtt[i] > 0) atts.push(`<span class="bg-white/80 border-2 border-white px-3 py-1 rounded-lg font-black text-stone-800 shadow-sm">${i}號 (${attLabels[todaysAtt[i]]})</span>`); aReport.innerHTML = atts.length ? atts.join(' ') : '<span class="text-stone-400 italic font-bold">該日無人請假</span>';
 
             initSortable();
@@ -596,7 +627,9 @@
             }
             else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } }
             else if(currentTab === 'grade') { if(!grades[currentGradeSubject].categories.find(c => c.name === val)) { grades[currentGradeSubject].categories.push({ name: val, weight: 1, exams: [] }); } }
-            document.getElementById('itemName').value = ''; saveToCloud(); 
+            document.getElementById('itemName').value = '';
+            if(currentTab === 'grade') renderGrades(); else renderAll();
+            saveToCloud();
         }
         
         function cycleTask(id, t) { 
