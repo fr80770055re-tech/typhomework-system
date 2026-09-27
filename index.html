@@ -99,7 +99,7 @@
             </h1>
             <div class="flex items-center gap-2">
                 <button onclick="toggleExamClock()" class="bg-[#dfa888] hover:bg-[#c99070] px-3.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-[#c99070]">⏱️ 考試大鐘</button>
-                <button onclick="exportExcel()" class="bg-[#788e83] hover:bg-[#63776d] px-3.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
+                <button onclick="openExportModal()" class="bg-[#788e83] hover:bg-[#63776d] px-3.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-white/20 hidden sm:block">匯出總表</button>
                 <button onclick="logout()" class="bg-red-400/80 hover:bg-red-500 px-2.5 py-1.5 rounded-xl font-black text-xs md:text-sm shadow-md transition text-white border border-white/20">登出</button>
             </div>
         </div>
@@ -231,6 +231,28 @@
             <div class="mt-5 flex gap-3 shrink-0">
                 <button onclick="copyReminderText()" class="flex-1 bg-white/80 text-stone-600 py-3 rounded-xl font-black text-base shadow-sm hover:bg-white border border-stone-200 transition">📋 複製文字</button>
                 <button onclick="sendReminderLine()" id="btnSendLine" class="flex-1 bg-[#06C755] text-white py-3 rounded-xl font-black text-base shadow-md hover:bg-[#05b34c] transition">💬 用 LINE 傳送</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exportModal" class="fixed inset-0 z-50 bg-stone-900/50 hidden items-center justify-center backdrop-blur-md font-black">
+        <div class="glass-panel p-8 rounded-3xl w-11/12 max-w-lg shadow-2xl border border-white">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-2xl font-black text-[#63776d]">📤 匯出總表</h2>
+                <button onclick="closeExportModal()" class="text-stone-400 hover:text-red-500 font-bold text-3xl">✕</button>
+            </div>
+            <p class="text-sm font-bold text-stone-500 mb-4 leading-relaxed">選擇要匯出的日期範圍（適用於出缺勤、潔牙掃地、作業指派日期、班級記事本），預設為當前學年區間，可自行調整；「學期成績」不受日期範圍限制，一律完整匯出。</p>
+            <div class="flex items-center gap-3 mb-3">
+                <label class="w-14 shrink-0 text-stone-600 text-sm">起始</label>
+                <input type="date" id="exportStartDate" class="flex-1 p-2 border border-white/80 rounded-xl font-black outline-none bg-white/70 text-stone-700">
+            </div>
+            <div class="flex items-center gap-3 mb-6">
+                <label class="w-14 shrink-0 text-stone-600 text-sm">結束</label>
+                <input type="date" id="exportEndDate" class="flex-1 p-2 border border-white/80 rounded-xl font-black outline-none bg-white/70 text-stone-700">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="exportExcel()" class="flex-1 bg-white/80 text-stone-600 py-3 rounded-xl font-black text-sm shadow-sm hover:bg-white border border-stone-200 transition">📦 匯出全部歷史資料</button>
+                <button onclick="runExportExcel()" class="flex-1 bg-[#788e83] text-white py-3 rounded-xl font-black text-sm shadow-md hover:bg-[#63776d] transition">✅ 匯出所選範圍</button>
             </div>
         </div>
     </div>
@@ -646,20 +668,42 @@
         function completeAllClean(taskName) { if(confirm(`確定將本日【${taskName}】設為全班過關？`)) { const count = parseInt(document.getElementById('studentCount').value) || 0; const d = document.getElementById('currentDate').value; if(!historyClean[d]) historyClean[d] = {}; for(let i = 1; i <= count; i++) { if(!historyClean[d][i]) historyClean[d][i] = {}; historyClean[d][i][taskName] = 1; } saveToCloud(); } }
         function cycleAttendance(id) { const d = document.getElementById('currentDate').value; if(!historyAtt[d]) historyAtt[d] = {}; historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveToCloud(); }
 
-        function exportExcel() {
+        function getDefaultSchoolYearRange() {
+            const now = new Date(); const y = now.getFullYear(); const m = now.getMonth() + 1;
+            const startYear = m >= 8 ? y : y - 1;
+            return { start: `${startYear}-08-01`, end: `${startYear + 1}-07-31` };
+        }
+        function openExportModal() {
+            const { start, end } = getDefaultSchoolYearRange();
+            document.getElementById('exportStartDate').value = start;
+            document.getElementById('exportEndDate').value = end;
+            document.getElementById('exportModal').classList.replace('hidden', 'flex');
+        }
+        function closeExportModal() { document.getElementById('exportModal').classList.replace('flex', 'hidden'); }
+        function runExportExcel() {
+            const start = document.getElementById('exportStartDate').value; const end = document.getElementById('exportEndDate').value;
+            if(start && end && start > end) return alert('起始日期不能晚於結束日期！');
+            exportExcel(start || null, end || null);
+            closeExportModal();
+        }
+
+        function exportExcel(startDate, endDate) {
+            const inRange = (d) => (!startDate || d >= startDate) && (!endDate || d <= endDate);
             const count = parseInt(document.getElementById('studentCount').value); const wb = XLSX.utils.book_new();
-            
-            let taskRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; tasks.forEach(t => row[t] = ["未交", "待訂正", "已完成", "批改中"][(globalTaskData[i] && globalTaskData[i][t]) || 0]); taskRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
-            let attRows = []; const allDates = Object.keys(historyAtt).sort(); for (let i = 1; i <= count; i++) { let row = { '座號': i }; let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; allDates.forEach(d => { const s = historyAtt[d][i] || 0; row[d] = attLabels[s]; if(s > 0) stats[s]++; }); row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3]; row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5]; attRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤總表");
-            const cleanDates = Object.keys(historyClean).sort(); cleanTasks.forEach(taskName => { let cleanRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; cleanDates.forEach(d => { const s = (historyClean[d][i] && historyClean[d][i][taskName]) || 0; row[d] = s === 1 ? "完成" : "未完成"; }); cleanRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`); });
+
+            const rangedTasks = tasks.filter(t => !taskDates[t] || inRange(taskDates[t]));
+            let taskRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; rangedTasks.forEach(t => row[t] = ["未交", "待訂正", "已完成", "批改中"][(globalTaskData[i] && globalTaskData[i][t]) || 0]); taskRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
+            let attRows = []; const allDates = Object.keys(historyAtt).filter(inRange).sort(); for (let i = 1; i <= count; i++) { let row = { '座號': i }; let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; allDates.forEach(d => { const s = historyAtt[d][i] || 0; row[d] = attLabels[s]; if(s > 0) stats[s]++; }); row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3]; row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5]; attRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤總表");
+            const cleanDates = Object.keys(historyClean).filter(inRange).sort(); cleanTasks.forEach(taskName => { let cleanRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; cleanDates.forEach(d => { const s = (historyClean[d][i] && historyClean[d][i][taskName]) || 0; row[d] = s === 1 ? "完成" : "未完成"; }); cleanRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`); });
             ["國語", "數學"].forEach(subject => {
                 let gradeRows = []; const subData = grades[subject];
                 for(let i=1; i<=count; i++) { let row = { '座號': i }; let tScore = 0, tWeight = 0; subData.categories.forEach(cat => { let cScore = 0, cWeight = 0; cat.exams.forEach(ex => { let key = `${cat.name}_${ex.name}`; let val = subData.scores[i]?.[key]; row[`${cat.name}-${ex.name}`] = val !== undefined ? val : ""; if(val !== undefined && val !== "") { cScore += Number(val) * ex.weight; cWeight += ex.weight; } }); if(cWeight > 0) { let cAvg = cScore / cWeight; row[`${cat.name}小計平均`] = cAvg.toFixed(1); tScore += cAvg * cat.weight; tWeight += cat.weight; } else { row[`${cat.name}小計平均`] = ""; } }); row['學期總加權平均'] = tWeight > 0 ? (tScore / tWeight).toFixed(1) : ""; gradeRows.push(row); }
                 if(subData.categories.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), `${subject}期末成績`);
             });
-            let noteRows = []; Object.keys(dailyNotes).sort().forEach(d => { if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] }); }); if (noteRows.length > 0) { const wsNotes = XLSX.utils.json_to_sheet(noteRows); wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本"); }
-            
-            XLSX.writeFile(wb, `班級雲端總表_${getLocalDateString()}.xlsx`);
+            let noteRows = []; Object.keys(dailyNotes).filter(inRange).sort().forEach(d => { if (dailyNotes[d] && dailyNotes[d].trim() !== '') noteRows.push({ '紀錄日期': d, '輔導與教學備忘錄': dailyNotes[d] }); }); if (noteRows.length > 0) { const wsNotes = XLSX.utils.json_to_sheet(noteRows); wsNotes['!cols'] = [{ wch: 15 }, { wch: 100 }]; XLSX.utils.book_append_sheet(wb, wsNotes, "輔導記事本"); }
+
+            const rangeLabel = (startDate || endDate) ? `_${startDate || '起'}~${endDate || '迄'}` : '';
+            XLSX.writeFile(wb, `班級雲端總表${rangeLabel}_${getLocalDateString()}.xlsx`);
         }
     </script>
 </body>
