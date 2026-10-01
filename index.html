@@ -185,6 +185,7 @@
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/></symbol>
         <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
         <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
         <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
         <symbol id="i-note" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
@@ -248,7 +249,9 @@
                 </span>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="downloadBackup()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm"><svg class="ic"><use href="#i-download"/></svg>下載備份</button>
+                <button onclick="downloadBackup()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-download"/></svg>下載備份</button>
+                <button onclick="document.getElementById('restoreFileInput').click()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-upload"/></svg>還原備份</button>
+                <input type="file" id="restoreFileInput" accept=".json,application/json" class="hidden" onchange="handleRestoreFile(this)">
                 <button onclick="toggleExamClock()" class="btn btn-accent btn-sm sm:!h-9 sm:!text-sm"><svg class="ic"><use href="#i-clock"/></svg>考試大鐘</button>
                 <button onclick="openExportModal()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-download"/></svg>匯出總表</button>
                 <button onclick="logout()" class="btn btn-on-dark is-danger btn-sm sm:!h-9 sm:!text-sm" aria-label="登出"><svg class="ic"><use href="#i-logout"/></svg><span class="hidden md:inline">登出</span></button>
@@ -394,6 +397,25 @@
         </div>
     </div>
 
+    <div id="restoreModal" class="fixed inset-0 z-[97] bg-[#2a241d]/55 hidden items-center justify-center font-black">
+        <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-upload"/></svg>從備份還原</h2>
+                <button onclick="closeRestoreModal()" class="btn btn-quiet btn-icon" aria-label="關閉"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <p class="text-sm font-bold text-[var(--ink-3)] mb-4 leading-relaxed">請確認這是你要還原的備份。還原會以備份內容<span class="text-[var(--ink)]">取代目前所有班級資料</span>（家長查詢頁也會同步更新）。</p>
+            <div class="bg-[var(--surface-2)] border border-[var(--line)] rounded-xl px-4 py-3 mb-4">
+                <div id="restoreFileName" class="text-sm font-black text-[var(--ink)] break-all mb-2"></div>
+                <dl id="restoreSummary" class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm"></dl>
+            </div>
+            <p class="text-sm font-bold text-[var(--ink-2)] bg-[var(--st-done-bg)] rounded-xl px-4 py-3 mb-6 leading-relaxed">按下還原前，系統會先自動下載一份<span class="text-[var(--ink)]">目前的資料</span>，萬一選錯檔案也能再還原回來。</p>
+            <div class="flex gap-3">
+                <button onclick="closeRestoreModal()" class="btn btn-quiet flex-1 !h-12">取消</button>
+                <button onclick="confirmRestore()" id="btnConfirmRestore" class="btn btn-accent flex-1 !h-12"><svg class="ic"><use href="#i-upload"/></svg>確認還原</button>
+            </div>
+        </div>
+    </div>
+
     <div id="exportModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
             <div class="flex justify-between items-center mb-3">
@@ -519,10 +541,74 @@
         let isFirstLoad = true;
         let lastCloudSnapshot = null;
         // 下載目前雲端資料的完整備份（JSON），內容為最近一次從雲端讀到的資料
-        function downloadBackup() {
+        function downloadBackup(fileName) {
             if (!lastCloudSnapshot) return alert('尚未讀取到雲端資料，請稍候再試。');
             const blob = new Blob([JSON.stringify(lastCloudSnapshot, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `班級資料備份_${getLocalDateString()}.json`; a.click(); URL.revokeObjectURL(a.href);
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (typeof fileName === 'string' && fileName) || `班級資料備份_${getLocalDateString()}.json`; a.click(); URL.revokeObjectURL(a.href);
+        }
+
+        // 從備份還原：先驗證檔案格式與顯示摘要，確認後先自動下載目前資料，再整份寫回雲端
+        const BACKUP_KEYS = { tasks: 'array', taskDates: 'object', globalTaskData: 'object', historyAtt: 'object', dailyNotes: 'object', announcements: 'string', cleanTasks: 'array', historyClean: 'object', grades: 'object', studentPasswords: 'object', examSchedule: 'string', studentCount: 'any' };
+        let pendingRestoreData = null;
+
+        function validateBackup(data) {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) return '檔案內容不是班級資料備份。';
+            const keys = Object.keys(data);
+            if (!keys.some(k => k in BACKUP_KEYS)) return '找不到班級資料（作業、出缺勤、成績等），這可能不是本系統的備份檔。';
+            const unknown = keys.filter(k => !(k in BACKUP_KEYS));
+            if (unknown.length) return `檔案含有本系統沒有的欄位（${unknown.slice(0, 3).join('、')}），為避免寫入錯誤資料已停止還原。`;
+            for (const k of keys) {
+                const want = BACKUP_KEYS[k]; const v = data[k];
+                if (want === 'any' || v === null) continue;
+                const ok = want === 'array' ? (Array.isArray(v) || (typeof v === 'object' && v !== null)) : want === 'object' ? (typeof v === 'object' && !Array.isArray(v)) : typeof v === want;
+                if (!ok) return `欄位「${k}」的格式不正確，為避免寫入錯誤資料已停止還原。`;
+            }
+            return null;
+        }
+
+        function handleRestoreFile(input) {
+            const file = input.files && input.files[0]; input.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                let data;
+                try { data = JSON.parse(reader.result); } catch (e) { return alert('無法讀取這個檔案：它不是有效的 JSON 備份檔。'); }
+                const err = validateBackup(data); if (err) return alert(err);
+                pendingRestoreData = data;
+                const count = (v) => Array.isArray(v) ? v.filter(x => x != null).length : (v && typeof v === 'object' ? Object.keys(v).length : 0);
+                const dates = [...Object.keys(data.historyAtt || {}), ...Object.keys(data.historyClean || {}), ...Object.keys(data.dailyNotes || {}), ...Object.values(data.taskDates || {})].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+                const gradeCats = ['國語', '數學'].map(sub => `${sub} ${count(data.grades?.[sub]?.categories)} 項`).join('、');
+                const rows = [
+                    ['班級人數', data.studentCount ? `${data.studentCount} 人` : '–'],
+                    ['作業', `${count(data.tasks)} 項`],
+                    ['潔牙掃地項目', `${count(data.cleanTasks)} 項`],
+                    ['出缺勤紀錄', `${count(data.historyAtt)} 天`],
+                    ['成績大項', gradeCats],
+                    ['資料日期範圍', dates.length ? `${dates[0]} ～ ${dates[dates.length - 1]}` : '–'],
+                ];
+                document.getElementById('restoreFileName').innerText = file.name;
+                document.getElementById('restoreSummary').innerHTML = rows.map(([k, v]) => `<dt class="text-[var(--ink-3)] font-bold">${k}</dt><dd class="text-[var(--ink)] font-black tnum">${v}</dd>`).join('');
+                document.getElementById('restoreModal').classList.replace('hidden', 'flex');
+            };
+            reader.onerror = () => alert('讀取檔案失敗，請再試一次。');
+            reader.readAsText(file);
+        }
+
+        function closeRestoreModal() { pendingRestoreData = null; document.getElementById('restoreModal').classList.replace('flex', 'hidden'); }
+
+        function confirmRestore() {
+            if (!currentUser || !pendingRestoreData) return;
+            const btn = document.getElementById('btnConfirmRestore'); btn.disabled = true; btn.classList.add('opacity-60');
+            if (lastCloudSnapshot) downloadBackup(`還原前自動備份_${getLocalDateString()}_${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}.json`);
+            const data = pendingRestoreData;
+            const done = () => { btn.disabled = false; btn.classList.remove('opacity-60'); };
+            db.ref('users/' + currentUser.uid).set(data).then(() => {
+                closeRestoreModal();
+                return db.ref('public_board/my_class').set(data)
+                    .then(() => alert('已從備份還原完成。還原前的資料已另外下載保存。'))
+                    .catch(err => { console.error('家長查詢頁同步失敗:', err); alert('班級資料已從備份還原，但家長查詢頁同步失敗。請確認網路後，隨意切換一個按鈕狀態再改回來，即可重新同步。'); });
+            }).catch(err => { console.error('還原失敗:', err); alert('還原失敗，雲端資料未變更。請確認網路連線後再試一次。\n' + (err && err.message ? err.message : '')); })
+              .finally(done);
         }
         function startDatabaseSync() {
             db.ref('users/' + currentUser.uid).on('value', (snapshot) => {
