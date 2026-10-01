@@ -173,6 +173,46 @@
         @media (max-height: 500px) and (orientation: landscape) { .control-bar { padding-top: 6px; padding-bottom: 6px; } .tab-btn { padding: 6px 12px; font-size: 0.9rem; } }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
+        /* 列印缺交檢核表：A4 直式、每頁 2×2 四位學生 */
+        #printArea { display: none; }
+        @page { size: A4 portrait; margin: 8mm; }
+        @media print {
+            html, body { height: auto !important; overflow: visible !important; display: block !important; background: #fff !important; padding: 0 !important; }
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block; color: #111; font-family: 'Nunito', 'Naguri', 'PingFang TC', 'Noto Sans TC', sans-serif; letter-spacing: 0.02em; }
+        }
+        .print-page { width: 194mm; height: 280mm; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; break-after: page; page-break-after: always; overflow: hidden; }
+        .print-page:last-child { break-after: auto; page-break-after: auto; }
+        .print-card { padding: 7mm 7mm 6mm; display: flex; flex-direction: column; overflow: hidden; border-color: #9a9a9a; border-style: dashed; border-width: 0; }
+        .print-card:nth-child(1) { border-right-width: 1px; border-bottom-width: 1px; }
+        .print-card:nth-child(2) { border-bottom-width: 1px; }
+        .print-card:nth-child(3) { border-right-width: 1px; }
+        .print-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4mm; border-bottom: 1.5px solid #111; padding-bottom: 2.5mm; margin-bottom: 3mm; }
+        .print-seat { font-size: 26pt; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+        .print-title { font-size: 12pt; font-weight: 900; }
+        .print-meta { font-size: 8.5pt; color: #555; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+        .print-list-head { display: flex; gap: 3mm; font-size: 8pt; color: #555; font-weight: 800; padding: 0 0 1.5mm; border-bottom: 1px solid #ccc; white-space: nowrap; }
+        .print-list-head .col-check { width: 8mm; text-align: center; flex-shrink: 0; }
+        .print-list { flex: 1; min-height: 0; overflow: hidden; }
+        .print-item { display: flex; align-items: center; gap: 3mm; padding: 2mm 0; border-bottom: 1px solid #ddd; font-size: 11pt; font-weight: 800; break-inside: avoid; }
+        .print-box { width: 5.5mm; height: 5.5mm; margin: 0 1.25mm; border: 1.5px solid #111; border-radius: 1mm; flex-shrink: 0; }
+        .print-name { flex: 1; min-width: 0; line-height: 1.25; word-break: break-all; }
+        .print-date { font-size: 8.5pt; color: #555; font-weight: 700; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+        .print-status { font-size: 8pt; font-weight: 900; border: 1px solid #111; border-radius: 1mm; padding: 0.3mm 1.5mm; flex-shrink: 0; }
+        .print-status.is-fix { border-style: dashed; }
+        .print-list.is-dense .print-item { padding: 1.2mm 0; font-size: 9.5pt; }
+        .print-list.is-dense .print-box { width: 4.5mm; height: 4.5mm; margin: 0 1.75mm; }
+        .print-list.is-two-col { column-count: 2; column-gap: 4mm; column-fill: auto; }
+        .print-list.is-two-col .print-item { gap: 1.5mm; }
+        .print-list.is-two-col .print-box { margin: 0; }
+        .print-list.is-two-col .print-date { display: none; }
+        .print-list.is-two-col .print-name { word-break: normal; overflow-wrap: anywhere; }
+        .print-list.is-tiny .print-item { padding: 0.7mm 0; font-size: 8.5pt; }
+        .print-list.is-tiny .print-box { width: 3.8mm; height: 3.8mm; }
+        .print-list.is-tiny .print-status { font-size: 7pt; padding: 0 1mm; }
+        .print-seat small { font-size: 11pt; font-weight: 800; margin-left: 1.5mm; }
+        .print-foot { margin-top: auto; padding-top: 2mm; font-size: 8.5pt; color: #555; font-weight: 700; }
+
         /* 考試大鐘 */
         .digital-clock-font { font-family: 'Nunito', 'Courier New', monospace; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; } .clock-panel { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .clock-split { font-size: min(13vw, 22vh); line-height: 1; } .clock-full { font-size: min(21vw, 70vh); line-height: 1; }
@@ -186,6 +226,7 @@
         <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/></symbol>
         <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+        <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14" rx="1"/></symbol>
         <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
         <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
         <symbol id="i-note" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
@@ -279,6 +320,7 @@
                 <button onclick="toggleAnnounceDrawer(true)" class="btn btn-quiet relative"><svg class="ic"><use href="#i-megaphone"/></svg>宣導<span id="announceDot" class="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--accent)] rounded-full hidden"></span></button>
                 <button onclick="openNoteModal()" class="btn btn-quiet"><svg class="ic"><use href="#i-note"/></svg>記事</button>
                 <button onclick="openReminderModal()" id="btnReminder" class="btn btn-quiet"><svg class="ic"><use href="#i-send"/></svg>繳交提醒</button>
+                <button onclick="openPrintModal()" id="btnPrintChecklist" class="btn btn-quiet"><svg class="ic"><use href="#i-printer"/></svg>列印缺交單</button>
                 <button onclick="openPasswordModal()" class="btn btn-quiet" title="家長查詢密碼設定"><svg class="ic"><use href="#i-key"/></svg><span class="hidden lg:inline">家長密碼</span></button>
             </div>
 
@@ -412,6 +454,26 @@
             <div class="flex gap-3">
                 <button onclick="closeRestoreModal()" class="btn btn-quiet flex-1 !h-12">取消</button>
                 <button onclick="confirmRestore()" id="btnConfirmRestore" class="btn btn-accent flex-1 !h-12"><svg class="ic"><use href="#i-upload"/></svg>確認還原</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+        <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-printer"/></svg>列印缺交檢核表</h2>
+                <button onclick="closePrintModal()" class="btn btn-quiet btn-icon" aria-label="關閉"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <p class="text-sm font-bold text-[var(--ink-3)] mb-5 leading-relaxed">每位學生一格，列出尚缺的作業與打勾欄。每張 A4 印四位學生，沿虛線裁開即可發給學生。</p>
+            <div class="text-sm font-black text-[var(--ink-2)] mb-2">要列入的狀態</div>
+            <div class="flex gap-2 mb-5">
+                <label class="field flex-1 cursor-pointer"><input type="checkbox" id="printIncludeMissing" checked onchange="updatePrintSummary()" class="w-4 h-4 accent-[var(--accent)]"><span class="chip chip-missing">未交</span></label>
+                <label class="field flex-1 cursor-pointer"><input type="checkbox" id="printIncludeFix" checked onchange="updatePrintSummary()" class="w-4 h-4 accent-[var(--accent)]"><span class="chip chip-fix">待訂正</span></label>
+            </div>
+            <div id="printSummary" class="text-base font-black text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--line)] rounded-xl px-4 py-3 mb-6"></div>
+            <div class="flex gap-3">
+                <button onclick="closePrintModal()" class="btn btn-quiet flex-1 !h-12">取消</button>
+                <button onclick="runPrintChecklist()" id="btnRunPrint" class="btn btn-dark flex-1 !h-12"><svg class="ic"><use href="#i-printer"/></svg>列印</button>
             </div>
         </div>
     </div>
@@ -647,7 +709,7 @@
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
-            btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
+            btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('btnPrintChecklist').classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
             renderAll();
@@ -930,6 +992,62 @@
             document.getElementById('exportEndDate').value = end;
             document.getElementById('exportModal').classList.replace('hidden', 'flex');
         }
+        // 列印缺交檢核表
+        function getPrintChecklistStudents() {
+            const includeMissing = document.getElementById('printIncludeMissing').checked; const includeFix = document.getElementById('printIncludeFix').checked;
+            const count = parseInt(document.getElementById('studentCount').value) || 0; const list = [];
+            for (let i = 1; i <= count; i++) {
+                const items = [];
+                tasks.forEach(t => { const st = (globalTaskData[i] && globalTaskData[i][t]) || 0; if ((st === 0 && includeMissing) || (st === 1 && includeFix)) items.push({ name: t, status: st, date: taskDates[t] || '' }); });
+                if (items.length) list.push({ sid: i, items });
+            }
+            return list;
+        }
+        function updatePrintSummary() {
+            const list = getPrintChecklistStudents(); const pages = list.length ? Math.ceil(buildPrintCards(list, '').length / 4) : 0; const btn = document.getElementById('btnRunPrint');
+            document.getElementById('printSummary').innerHTML = list.length ? `將列印 <span class="tnum">${list.length}</span> 位學生，共 <span class="tnum">${pages}</span> 張 A4` : '<span class="text-[var(--ink-3)]">目前沒有符合條件的學生，不需要列印。</span>';
+            btn.disabled = !list.length; btn.classList.toggle('opacity-40', !list.length); btn.classList.toggle('cursor-not-allowed', !list.length);
+        }
+        function openPrintModal() { updatePrintSummary(); document.getElementById('printModal').classList.replace('hidden', 'flex'); }
+        function closePrintModal() { document.getElementById('printModal').classList.replace('flex', 'hidden'); }
+        function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        const PRINT_LEVELS = ['', 'is-dense', 'is-dense is-two-col', 'is-dense is-two-col is-tiny'];
+        function printCardHtml(sid, items, level, opts) {
+            const fmt = d => d ? d.slice(5).replace('-', '/') : '';
+            const rows = items.map(it => `<div class="print-item"><span class="print-box"></span><span class="print-name">${escapeHtml(it.name)}</span>${it.date ? `<span class="print-date">${fmt(it.date)}</span>` : ''}<span class="print-status ${it.status === 1 ? 'is-fix' : ''}">${it.status === 1 ? '待訂正' : '未交'}</span></div>`).join('');
+            const foot = `共 ${opts.total} 項${opts.hasMore ? '，接續下一張' : '，完成後請在方格打勾'}。`;
+            return `<section class="print-card"><div class="print-card-head"><div class="print-seat">${sid} 號${opts.isCont ? '<small>（續）</small>' : ''}</div><div><div class="print-title">作業補交檢核表</div><div class="print-meta">列印日期 ${opts.today}</div></div></div><div class="print-list-head"><span class="col-check">完成</span><span>作業名稱</span><span style="margin-left:auto">指派日・狀態</span></div><div class="print-list ${level}">${rows}</div><div class="print-foot">${foot}</div></section>`;
+        }
+        // 每位學生一格；依序嘗試較小的字級／雙欄，仍放不下時把剩下的項目接到下一格，確保每一項都印得出來
+        function buildPrintCards(list, today) {
+            const meas = document.createElement('div'); meas.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden;'; document.body.appendChild(meas);
+            const fits = (html) => { meas.innerHTML = `<div class="print-page">${html}</div>`; const el = meas.querySelector('.print-list'); return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1; };
+            const cards = [];
+            list.forEach(({ sid, items }) => {
+                let rest = items; let isCont = false;
+                while (rest.length) {
+                    let html = null;
+                    for (const level of PRINT_LEVELS) { const h = printCardHtml(sid, rest, level, { total: items.length, isCont, hasMore: false, today }); if (fits(h)) { html = h; break; } }
+                    if (html) { cards.push(html); break; }
+                    const tiny = PRINT_LEVELS[PRINT_LEVELS.length - 1]; let k = rest.length - 1;
+                    while (k > 1 && !fits(printCardHtml(sid, rest.slice(0, k), tiny, { total: items.length, isCont, hasMore: true, today }))) k--;
+                    cards.push(printCardHtml(sid, rest.slice(0, k), tiny, { total: items.length, isCont, hasMore: true, today }));
+                    rest = rest.slice(k); isCont = true;
+                }
+            });
+            meas.remove();
+            return cards;
+        }
+        function runPrintChecklist() {
+            const list = getPrintChecklistStudents(); if (!list.length) return;
+            const cards = buildPrintCards(list, getLocalDateString().replace(/-/g, '/'));
+            let html = '';
+            for (let i = 0; i < cards.length; i += 4) html += `<div class="print-page">${cards.slice(i, i + 4).join('')}</div>`;
+            document.getElementById('printArea').innerHTML = html;
+            closePrintModal();
+            setTimeout(() => window.print(), 50);
+        }
+
         function closeExportModal() { document.getElementById('exportModal').classList.replace('flex', 'hidden'); }
         function runExportExcel() {
             const start = document.getElementById('exportStartDate').value; const end = document.getElementById('exportEndDate').value;
@@ -957,5 +1075,6 @@
             XLSX.writeFile(wb, `班級雲端總表${rangeLabel}_${getLocalDateString()}.xlsx`);
         }
     </script>
+    <div id="printArea" aria-hidden="true"></div>
 </body>
 </html>
