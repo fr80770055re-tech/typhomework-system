@@ -197,6 +197,45 @@
         .weight-input { width: 42px; text-align: center; font-weight: 900; font-size: 0.85em; padding: 1px; border-radius: 6px; border: 1px solid var(--line); background: #fff; outline: none; font-variant-numeric: tabular-nums; }
         .weight-input:focus { border-color: var(--focus); }
 
+        /* ===== 手機版（寬度 < 768px）=====
+           只改呈現：作業改為「上方切換作業＋座位網格」、成績改為一次一個小項、分頁列移到底部。
+           電腦版不受這段影響。 */
+        .seat-hide { position: absolute; top: calc(-5px * var(--zoom)); right: calc(-5px * var(--zoom)); width: calc(22px * var(--zoom)); height: calc(22px * var(--zoom)); border-radius: 999px; background: var(--surface); color: var(--ink-3); border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; }
+        .grade-chip-group { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .grade-chip-cat { font-size: 0.8rem; font-weight: 900; color: var(--ink-3); padding: 0 2px; }
+        .focus-chip.is-add { padding: 0 0.15rem; border-style: dashed; color: var(--ink-3); }
+        .focus-sub { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 8px 16px 0; font-size: 0.85rem; font-weight: 800; color: var(--ink-3); }
+        .grade-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 16px 24px; }
+        .grade-cell { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+        .grade-cell-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 900; font-variant-numeric: tabular-nums; }
+        .grade-cell-idx { font-size: 1.05rem; color: var(--ink); }
+        .grade-cell-total { font-size: 0.72rem; color: var(--ink-3); }
+        .grade-cell .grade-input { width: 100%; font-size: 1.25rem; padding: 8px 2px; }
+
+        @media (max-width: 767px) {
+            .mobile-hide { display: none !important; }
+            /* 工具列改成單列左右滑動，避免換成好幾行吃掉畫面 */
+            .control-bar > div:first-child { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 2px; scrollbar-width: none; }
+            .control-bar > div:first-child::-webkit-scrollbar { display: none; }
+            .control-bar > div:first-child > * { flex-shrink: 0; }
+            /* 分頁列移到底部，像手機 App 的導覽列 */
+            .tab-row { order: 99; padding: 0; gap: 0; border-bottom: 0; border-top: 1px solid var(--line); background: var(--surface); overflow: visible; padding-bottom: env(safe-area-inset-bottom); }
+            .tab-row .tab-btn { flex: 1; flex-direction: column; gap: 0.2rem; padding: 0.55rem 0.2rem 0.6rem; font-size: 0.75rem; border-radius: 0; border: 0; margin: 0; }
+            .tab-row .tab-btn .ic { width: 1.35rem; height: 1.35rem; }
+            .tab-row .tab-active { background: var(--accent-soft); color: var(--accent-hover); }
+            .tab-row .tab-active::before { left: 25%; right: 25%; }
+            .report-section { order: 98; }
+            .report-open { height: 42%; }
+            .chip-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+            .chip-row::-webkit-scrollbar { display: none; }
+            .chip-row > * { flex-shrink: 0; }
+            .focus-title { font-size: 1.2rem; }
+            .focus-actions { margin-left: 0; width: 100%; }
+            .seat-grid { gap: 8px; padding: 12px 12px 20px; }
+            .state-btn:hover { transform: none; box-shadow: none; }
+        }
+        @media (max-width: 400px) { .grade-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
         @media (max-height: 500px) and (orientation: landscape) { .control-bar { padding-top: 6px; padding-bottom: 6px; } .tab-btn { padding: 6px 12px; font-size: 0.9rem; } }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
@@ -337,11 +376,11 @@
                     <input type="number" id="studentCount" value="5" class="w-9 text-center text-sm tnum" onchange="saveToCloud()">
                     <span class="field-label">人</span>
                 </label>
-                <label id="seatColsField" class="field hidden" title="潔牙掃地、出缺勤的座位網格每排人數，建議設成跟教室實際座位一樣">
+                <label id="seatColsField" class="field hidden mobile-hide" title="潔牙掃地、出缺勤的座位網格每排人數，建議設成跟教室實際座位一樣">
                     <span class="field-label">每排</span>
                     <input type="number" id="seatCols" min="2" max="12" value="6" class="w-9 text-center text-sm tnum" onchange="changeSeatCols(this.value)">
                 </label>
-                <label class="field" title="縮放表格大小">
+                <label class="field mobile-hide" title="縮放表格大小">
                     <svg class="ic text-[var(--ink-3)]"><use href="#i-zoom"/></svg>
                     <input type="range" id="uiZoom" min="0.5" max="1.1" step="0.05" value="1" oninput="changeZoom(this.value)" class="w-16 md:w-24" aria-label="縮放表格大小">
                 </label>
@@ -372,7 +411,7 @@
             <button id="btnCleanTab" onclick="switchTab('clean')" class="tab-btn tab-inactive"><svg class="ic"><use href="#i-sparkle"/></svg>潔牙掃地</button>
             <button id="btnGradeTab" onclick="switchTab('grade')" class="tab-btn tab-inactive"><svg class="ic"><use href="#i-chart"/></svg>樹狀成績</button>
             <button id="btnAttTab" onclick="switchTab('att')" class="tab-btn tab-inactive"><svg class="ic"><use href="#i-calendar-check"/></svg>出缺勤</button>
-            <div class="ml-auto flex items-center gap-2 pb-2 pl-3 shrink-0">
+            <div class="ml-auto flex items-center gap-2 pb-2 pl-3 shrink-0 mobile-hide">
                 <div id="taskLegend" class="hidden lg:flex items-center gap-1.5 mr-1 text-xs">
                     <span class="chip chip-missing">未交</span><span class="chip chip-grading">批改中</span><span class="chip chip-fix">待訂</span><span class="chip chip-done">完成</span>
                 </div>
@@ -381,9 +420,9 @@
             </div>
         </div>
 
-        <div id="taskView" class="scroll-section"><table class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table></div>
+        <div id="taskView" class="scroll-section"><table id="taskTable" class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table><div id="taskFocus"></div></div>
         <div id="cleanView" class="scroll-section hidden"><div id="cleanFocus"></div></div>
-        <div id="gradeView" class="scroll-section hidden"><table class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table></div>
+        <div id="gradeView" class="scroll-section hidden"><table id="gradeTable" class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table><div id="gradeMobile"></div></div>
         <div id="attView" class="scroll-section hidden"><div id="attFocus"></div></div>
 
         <!-- 總覽面板 -->
@@ -562,8 +601,10 @@
 
         function initSortable() {
             const opts = { animation: 200, handle: '.drag-handle', filter: 'button, .state-btn, input, textarea', preventOnFilter: false, delay: 150, delayOnTouchOnly: true, ghostClass: 'sortable-ghost' };
-            if(taskSortable) taskSortable.destroy();
-            if(document.getElementById('taskBody')) { taskSortable = new Sortable(document.getElementById('taskBody'), { ...opts, onEnd: function (evt) { const movedItem = tasks.splice(evt.oldIndex, 1)[0]; tasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
+            if(taskSortable) { taskSortable.destroy(); taskSortable = null; }
+            // 電腦版拖曳表格列；手機版拖曳上方作業 chip（手機版的 chip 列只有在有作業時才存在）
+            const taskSortEl = document.getElementById(isMobile() ? 'taskChips' : 'taskBody');
+            if(taskSortEl) { taskSortable = new Sortable(taskSortEl, { ...opts, onEnd: function (evt) { const movedItem = tasks.splice(evt.oldIndex, 1)[0]; tasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
             // 潔牙掃地的 chip 列只有在清單非空時才渲染，destroy 後要把參考清掉，否則下次會對已銷毀的實例再 destroy 而拋例外
             if(cleanSortable) { cleanSortable.destroy(); cleanSortable = null; }
             if(document.getElementById('cleanChips')) { cleanSortable = new Sortable(document.getElementById('cleanChips'), { ...opts, onEnd: function (evt) { const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0]; cleanTasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
@@ -622,6 +663,7 @@
                 const savedZoom = localStorage.getItem(`zoom_${currentUser.uid}`);
                 if(savedZoom) { document.getElementById('uiZoom').value = savedZoom; changeZoom(savedZoom); }
                 document.getElementById('seatCols').value = getSeatCols();
+                if (isMobile() && isReportOpen) toggleReport(); // 手機畫面小，總覽面板預設收合
 
                 startDatabaseSync();
             } else {
@@ -826,6 +868,10 @@
         }
 
         function renderGrades() {
+            const mobile = isMobile();
+            document.getElementById('gradeTable').classList.toggle('hidden', mobile);
+            if (mobile) { document.getElementById('gradeHeader').innerHTML = ''; document.getElementById('gradeBody').innerHTML = ''; renderGradesMobile(); return; }
+            document.getElementById('gradeMobile').innerHTML = '';
             const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
             let h1 = `<tr><th class="sticky-cross text-center student-th" rowspan="2">座號</th>`; let h2 = `<tr>`;
             if(subData.categories.length === 0) { h1 += `<th class="text-[var(--ink-3)] font-bold p-6 bg-[var(--surface)] text-left">還沒有成績項目。在上方輸入大項目名稱（例如「平時測驗」），再按「加主項目」。</th>`; h2 += `<th class="hidden"></th>`; }
@@ -878,7 +924,7 @@
         function updateScore(sid, key, val) { if(!grades[currentGradeSubject].scores[sid]) grades[currentGradeSubject].scores[sid] = {}; grades[currentGradeSubject].scores[sid][key] = val; renderAll(); saveToCloud(); }
         function deleteCat(cIdx) { if(confirm('確定刪除這個大項目嗎？底下的所有小項成績都會消失喔！')) { grades[currentGradeSubject].categories.splice(cIdx, 1); renderGrades(); saveToCloud(); } }
         function deleteSubExam(cIdx, eIdx) { if(confirm('確定刪除此小項成績？')) { grades[currentGradeSubject].categories[cIdx].exams.splice(eIdx, 1); renderGrades(); saveToCloud(); } }
-        function addSubExam(cIdx) { let name = prompt("請輸入小項名稱 (例如: CH1 或 L1)："); if(name) { name = name.trim().replace(/[.#$/\[\]]/g, '_'); if(!grades[currentGradeSubject].categories[cIdx].exams) grades[currentGradeSubject].categories[cIdx].exams = []; if(grades[currentGradeSubject].categories[cIdx].exams.find(e => e.name === name)) return alert("名稱已存在！"); grades[currentGradeSubject].categories[cIdx].exams.push({ name: name, weight: 1 }); renderGrades(); saveToCloud(); } }
+        function addSubExam(cIdx) { let name = prompt("請輸入小項名稱 (例如: CH1 或 L1)："); if(name) { name = name.trim().replace(/[.#$/\[\]]/g, '_'); if(!grades[currentGradeSubject].categories[cIdx].exams) grades[currentGradeSubject].categories[cIdx].exams = []; if(grades[currentGradeSubject].categories[cIdx].exams.find(e => e.name === name)) return alert("名稱已存在！"); grades[currentGradeSubject].categories[cIdx].exams.push({ name: name, weight: 1 }); focusedGradeExam[currentGradeSubject] = { cat: grades[currentGradeSubject].categories[cIdx].name, ex: name }; renderGrades(); saveToCloud(); } }
 
         // 改名時需同步搬移該大項/小項底下所有學生的成績資料（存放的 key 是用名稱組成的），否則改名後舊成績會找不到
         function renameCat(cIdx) {
@@ -889,6 +935,7 @@
             if(newName === cat.name) return;
             if(subData.categories.some((c, idx) => idx !== cIdx && c.name === newName)) return alert("名稱已存在！");
             const oldName = cat.name; cat.name = newName;
+            const gf = focusedGradeExam[currentGradeSubject]; if(gf && gf.cat === oldName) gf.cat = newName; // 手機版聚焦跟著改名
             for(let sid in subData.scores) {
                 for(let key in subData.scores[sid]) {
                     if(key.startsWith(oldName + '_')) { const newKey = newName + key.slice(oldName.length); subData.scores[sid][newKey] = subData.scores[sid][key]; delete subData.scores[sid][key]; }
@@ -903,6 +950,7 @@
             if(!newName) return alert("名稱不可為空！");
             if(newName === ex.name) return;
             if(cat.exams.some((e, idx) => idx !== eIdx && e.name === newName)) return alert("名稱已存在！");
+            const gf = focusedGradeExam[currentGradeSubject]; if(gf && gf.cat === cat.name && gf.ex === ex.name) gf.ex = newName; // 手機版聚焦跟著改名
             const oldKey = `${cat.name}_${ex.name}`; const newKey = `${cat.name}_${newName}`; ex.name = newName;
             for(let sid in subData.scores) { if(subData.scores[sid] && subData.scores[sid][oldKey] !== undefined) { subData.scores[sid][newKey] = subData.scores[sid][oldKey]; delete subData.scores[sid][oldKey]; } }
             renderGrades(); saveToCloud();
@@ -923,6 +971,127 @@
         // 只改畫面呈現，資料結構（cleanTasks、historyClean、historyAtt）完全不變。
         // 聚焦目標記「名稱」而不是索引，刪除或拖曳排序之後仍然對應到同一個項目。
         let focusedCleanName = null;
+
+        // ===== 手機版（寬度 < 768px）=====
+        // 只換畫面呈現方式，讀寫的仍是同一份 tasks / globalTaskData / grades，資料結構不變。
+        function isMobile() { return window.matchMedia('(max-width: 767px)').matches; }
+        let focusedTaskName = null;          // 手機版作業：記名稱而非索引，刪除或排序後仍對應同一項
+        const focusedGradeExam = {};         // 手機版成績：每個科目各記一個 { cat, ex }
+
+        function focusTaskAt(i) { focusedTaskName = tasks[i]; renderAll(); }
+        function cycleFocusedTask(sid) { cycleTask(sid, focusedTaskName); }
+        function completeAllFocusedTask() { completeAllTask(focusedTaskName); }
+        function deleteFocusedTask() { deleteTask(tasks.indexOf(focusedTaskName)); }
+
+        function renderTaskFocus(count, imperfectSids) {
+            const host = document.getElementById('taskFocus');
+            if (tasks.length === 0) { host.innerHTML = `<div class="empty-note">還沒有作業。在上方輸入作業名稱後按「新增」。</div>`; return; }
+            if (!tasks.includes(focusedTaskName)) focusedTaskName = tasks[0];
+            const t = focusedTaskName;
+
+            const chips = tasks.map((name, i) => {
+                let done = 0;
+                for (let s = 1; s <= count; s++) if (((globalTaskData[s] || {})[name] || 0) === 2) done++;
+                const allDone = count > 0 && done === count;
+                return `<div class="focus-chip ${name === t ? 'is-active' : ''} ${allDone ? 'is-complete' : ''}"><span class="drag-handle" title="拖曳排序">${ic('grip')}</span><button class="focus-chip-btn" onclick="focusTaskAt(${i})"><span>${name}</span><span class="focus-chip-count">${allDone ? '全交齊' : done + '/' + count}</span></button></div>`;
+            }).join('');
+
+            const dateStr = taskDates[t] ? `${taskDates[t].slice(5).replace('-', '/')} 指派` : '';
+            const lbls = { 0: "未交", 1: "待訂", 2: "完成", 3: "批改中" };
+            let cells = '';
+            for (let i = 1; i <= count; i++) {
+                if (isHidePerfect && !imperfectSids.has(i) || manuallyHiddenTaskStudents.has(i)) continue;
+                const s = (globalTaskData[i] && globalTaskData[i][t]) || 0;
+                // 作業全部完成的學生可單獨暫時隱藏（電腦版在表頭，手機版改為格子角標）
+                const hideBtn = !imperfectSids.has(i) ? `<button class="seat-hide" onclick="hideStudentTask(${i})" title="此生作業已全部完成，點擊暫時隱藏" aria-label="暫時隱藏 ${i} 號">${ic('x', '!w-3 !h-3')}</button>` : '';
+                cells += `<div class="seat-cell"><button onclick="cycleFocusedTask(${i})" class="state-btn task-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button>${hideBtn}</div>`;
+            }
+            if (!cells) cells = `<div class="empty-note" style="grid-column:1/-1">目前沒有符合條件的學生。</div>`;
+
+            const hiddenCount = manuallyHiddenTaskStudents.size;
+            host.innerHTML = `<div class="chip-row" id="taskChips">${chips}</div>
+                <div class="focus-bar">
+                    <div class="focus-title">${t}</div>
+                    ${dateStr ? `<span class="focus-meta">${dateStr}</span>` : ''}
+                    <div class="focus-actions">
+                        <button onclick="completeAllFocusedTask()" class="btn btn-quiet btn-sm">${ic('check')}全班完成</button>
+                        <button onclick="toggleHidePerfect()" class="btn ${isHidePerfect ? 'btn-toggled' : 'btn-quiet'} btn-sm">${ic(isHidePerfect ? 'eye' : 'eye-off')}${isHidePerfect ? '顯示全班' : '隱藏全過關'}</button>
+                        ${hiddenCount ? `<button onclick="showAllHiddenTaskStudents()" class="btn btn-toggled btn-sm">${ic('eye')}還原 ${hiddenCount} 位</button>` : ''}
+                        <button onclick="deleteFocusedTask()" class="btn btn-danger-quiet btn-sm">${ic('x')}刪除</button>
+                    </div>
+                </div>${seatGrid(cells)}`;
+        }
+
+        function focusGradeExam(cIdx, eIdx) {
+            const cat = grades[currentGradeSubject].categories[cIdx];
+            focusedGradeExam[currentGradeSubject] = { cat: cat.name, ex: cat.exams[eIdx].name };
+            renderGrades();
+        }
+
+        // 與電腦版表格相同的加權算法：小項加權平均 → 大項平均 → 依大項權重算學期總成績
+        function studentGradeTotal(subData, sid) {
+            let totalScoreSum = 0; let totalWeightSum = 0;
+            subData.categories.forEach(cat => {
+                let catScoreSum = 0; let catWeightSum = 0;
+                (cat.exams || []).forEach(ex => { const v = subData.scores[sid]?.[`${cat.name}_${ex.name}`]; if (v !== undefined && v !== "") { const w = Number(ex.weight) || 1; catScoreSum += Number(v) * w; catWeightSum += w; } });
+                if (catWeightSum > 0) { const cw = Number(cat.weight) || 1; totalScoreSum += (catScoreSum / catWeightSum) * cw; totalWeightSum += cw; }
+            });
+            return totalWeightSum > 0 ? (totalScoreSum / totalWeightSum).toFixed(1) : null;
+        }
+
+        function renderGradesMobile() {
+            const host = document.getElementById('gradeMobile');
+            const subData = grades[currentGradeSubject]; const count = parseInt(document.getElementById('studentCount').value) || 0;
+            if (subData.categories.length === 0) { host.innerHTML = `<div class="empty-note">還沒有成績項目。在上方輸入大項目名稱（例如「平時測驗」），再按「加主項目」。</div>`; return; }
+
+            // 找出聚焦的小項；找不到（被刪除或第一次進來）就退回第一個有小項的大項
+            let cIdx = -1, eIdx = -1; const f = focusedGradeExam[currentGradeSubject];
+            if (f) { cIdx = subData.categories.findIndex(c => c.name === f.cat); if (cIdx > -1) eIdx = (subData.categories[cIdx].exams || []).findIndex(e => e.name === f.ex); }
+            if (eIdx === -1) { cIdx = subData.categories.findIndex(c => (c.exams || []).length > 0); eIdx = cIdx > -1 ? 0 : -1; }
+            if (cIdx > -1) focusedGradeExam[currentGradeSubject] = { cat: subData.categories[cIdx].name, ex: subData.categories[cIdx].exams[eIdx].name };
+
+            const chips = subData.categories.map((cat, ci) => {
+                const exChips = (cat.exams || []).map((ex, ei) => {
+                    const key = `${cat.name}_${ex.name}`; let filled = 0;
+                    for (let s = 1; s <= count; s++) { const v = subData.scores[s]?.[key]; if (v !== undefined && v !== "") filled++; }
+                    const allDone = count > 0 && filled === count;
+                    return `<div class="focus-chip ${ci === cIdx && ei === eIdx ? 'is-active' : ''} ${allDone ? 'is-complete' : ''}"><button class="focus-chip-btn" onclick="focusGradeExam(${ci}, ${ei})"><span>${ex.name}</span><span class="focus-chip-count">${filled}/${count}</span></button></div>`;
+                }).join('');
+                return `<div class="grade-chip-group"><span class="grade-chip-cat">${cat.name}</span>${exChips}<div class="focus-chip is-add"><button class="focus-chip-btn" onclick="addSubExam(${ci})" aria-label="在${cat.name}新增小項">${ic('plus')}小項</button></div></div>`;
+            }).join('');
+
+            if (cIdx === -1) { host.innerHTML = `<div class="chip-row">${chips}</div><div class="empty-note">大項底下還沒有小項，點上方的「＋小項」新增。</div>`; return; }
+
+            const cat = subData.categories[cIdx]; const ex = cat.exams[eIdx]; const key = `${cat.name}_${ex.name}`;
+            let cells = ''; let sum = 0; let n = 0;
+            for (let i = 1; i <= count; i++) {
+                const val = subData.scores[i]?.[key] !== undefined ? subData.scores[i][key] : "";
+                if (val !== "") { sum += Number(val); n++; }
+                const total = studentGradeTotal(subData, i);
+                cells += `<label class="grade-cell"><span class="grade-cell-head"><span class="grade-cell-idx">${i} 號</span><span class="grade-cell-total">${total !== null ? '總 ' + total : ''}</span></span><input type="number" inputmode="decimal" enterkeyhint="next" class="grade-input" data-index="${i - 1}" data-sid="${i}" data-col="0" value="${val}" onchange="updateScore(${i}, '${key}', this.value)" onkeydown="handleGradeEnter(event)" placeholder="-"></label>`;
+            }
+
+            host.innerHTML = `<div class="chip-row">${chips}</div>
+                <div class="focus-bar">
+                    <div class="focus-title">${cat.name} › ${ex.name}</div>
+                    <span class="focus-meta">已輸入 ${n}/${count}${n ? `・平均 ${(sum / n).toFixed(1)}` : ''}</span>
+                    <div class="focus-actions">
+                        <button onclick="linearAdjust(${cIdx}, ${eIdx})" class="btn btn-quiet btn-sm">${ic('wand')}調分</button>
+                        <button onclick="renameSubExam(${cIdx}, ${eIdx})" class="btn btn-quiet btn-sm">${ic('pencil')}改名</button>
+                        <button onclick="deleteSubExam(${cIdx}, ${eIdx})" class="btn btn-danger-quiet btn-sm">${ic('x')}刪除小項</button>
+                    </div>
+                </div>
+                <div class="focus-sub">
+                    <span>小項權重 <input type="number" class="weight-input" value="${ex.weight}" onchange="updateSubWeight(${cIdx}, ${eIdx}, this.value)" min="0" step="0.1"></span>
+                    <span>大項「${cat.name}」權重 <input type="number" class="weight-input" value="${cat.weight}" onchange="updateCatWeight(${cIdx}, this.value)" min="0" step="0.1"></span>
+                    <button onclick="renameCat(${cIdx})" class="btn btn-quiet btn-sm">${ic('pencil')}大項改名</button>
+                    <button onclick="deleteCat(${cIdx})" class="btn btn-danger-quiet btn-sm">${ic('x')}刪除大項</button>
+                </div>
+                <div class="grade-grid">${cells}</div>`;
+        }
+
+        // 旋轉手機或調整視窗跨過手機／電腦版界線時，重新繪製成對應版面
+        window.matchMedia('(max-width: 767px)').addEventListener('change', () => { if (currentUser) renderAll(); });
 
         // 每排人數只存在本機，不寫入雲端資料，以免影響備份還原的欄位驗證
         function getSeatCols() { const v = parseInt(localStorage.getItem('v36_seat_cols')); return (v >= 2 && v <= 12) ? v : 6; }
@@ -1000,6 +1169,14 @@
             const btnShowHidden = document.getElementById('btnShowHiddenStudents');
             if(btnShowHidden) { document.getElementById('hiddenStudentCount').innerText = manuallyHiddenTaskStudents.size; btnShowHidden.classList.toggle('hidden', currentTab !== 'task' || manuallyHiddenTaskStudents.size === 0); }
 
+            // 手機版：作業改為單一作業聚焦＋座位網格；電腦版維持原本表格
+            const mobile = isMobile();
+            document.getElementById('taskTable').classList.toggle('hidden', mobile);
+            if (mobile) {
+                document.getElementById('taskHeader').innerHTML = ''; document.getElementById('taskBody').innerHTML = '';
+                renderTaskFocus(count, imperfectSids);
+            } else {
+            document.getElementById('taskFocus').innerHTML = '';
             let studentsHeader = '';
             for(let i = 1; i <= count; i++) {
                 if(currentTab === 'task' && (isHidePerfect && !imperfectSids.has(i) || manuallyHiddenTaskStudents.has(i))) continue;
@@ -1020,6 +1197,7 @@
                 tBodyHtml += row + '</tr>';
             });
             tBody.innerHTML = tBodyHtml;
+            }
 
             renderCleanFocus(count, todaysClean);
             renderAttFocus(count, todaysAtt);
@@ -1056,8 +1234,9 @@
             if(currentTab === 'task') { 
                 if(!tasks.includes(val)) { 
                     tasks.push(val); 
-                    taskDates[val] = document.getElementById('currentDate').value; 
-                } 
+                    taskDates[val] = document.getElementById('currentDate').value;
+                }
+                focusedTaskName = val; // 手機版新增後直接聚焦過去（電腦版不使用此變數）
             }
             else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } focusedCleanName = val; } // 新增後直接聚焦過去，否則畫面停在舊項目像沒反應
             else if(currentTab === 'grade') { if(!grades[currentGradeSubject].categories.find(c => c.name === val)) { grades[currentGradeSubject].categories.push({ name: val, weight: 1, exams: [] }); } }
