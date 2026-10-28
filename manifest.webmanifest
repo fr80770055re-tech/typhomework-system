@@ -1,0 +1,13 @@
+{
+  "name": "班級管理系統",
+  "short_name": "班級管理",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ede6d9",
+  "theme_color": "#433d36",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
