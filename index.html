@@ -132,6 +132,29 @@
         .clean-0 { background: var(--st-missing-bg); color: var(--st-missing-ink); border-color: var(--st-missing-line); }
         .clean-1 { background: var(--st-clean-done-bg); color: var(--st-clean-done-ink); border-color: var(--st-clean-done-bg); }
 
+        /* 座位網格（潔牙掃地、出缺勤）：固定欄數，每位學生的位置不會隨視窗寬度跑動，
+           可對應教室實際座位。窄螢幕才強制降欄（!important 蓋過 inline 偏好值）。 */
+        .seat-grid { display: grid; grid-template-columns: repeat(var(--seat-cols, 6), minmax(0, 1fr)); gap: calc(10px * var(--zoom)); padding: calc(12px * var(--zoom)) 16px 24px; align-content: start; }
+        .seat-cell { position: relative; min-width: 0; }
+        @media (max-width: 820px) { .seat-grid { --seat-cols: 4 !important; } }
+        @media (max-width: 560px) { .seat-grid { --seat-cols: 3 !important; } }
+
+        /* 檢核項目選擇列：一次只聚焦一個項目，取代原本的多列表格 */
+        .chip-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 15; }
+        /* 拖曳把手必須放在 button 之外：Sortable 以 filter 略過 button 上的 mousedown，
+           把手若包在 button 裡會連帶被濾掉，導致 chip 無法拖曳。 */
+        .focus-chip { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0 0.25rem 0 0.45rem; border-radius: 0.85rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-weight: 900; font-size: 0.95rem; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+        .focus-chip:hover { background: #fff; border-color: var(--line-strong); color: var(--ink); }
+        .focus-chip.is-active { background: var(--accent-soft); border-color: #e7bfa8; color: var(--accent-hover); }
+        .focus-chip-btn { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0.5rem 0.4rem; border-radius: 0.6rem; }
+        .focus-chip-count { font-size: 0.8rem; font-weight: 800; opacity: 0.8; font-variant-numeric: tabular-nums; }
+        .focus-chip.is-complete .focus-chip-count { color: var(--st-clean-done-ink); opacity: 1; }
+        .focus-bar { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; padding: 14px 16px 0; }
+        .focus-title { font-size: 1.45rem; font-weight: 900; color: var(--ink); line-height: 1.2; }
+        .focus-meta { font-size: 0.85rem; font-weight: 800; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        .focus-actions { display: flex; gap: 0.4rem; margin-left: auto; flex-wrap: wrap; }
+        .empty-note { padding: 40px 16px; text-align: center; color: var(--ink-3); font-weight: 800; }
+
         /* 表格 */
         table { border-collapse: separate; border-spacing: 0; }
         th { background: var(--surface-2); font-weight: 900; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 10px 4px; white-space: nowrap; }
@@ -310,6 +333,10 @@
                     <input type="number" id="studentCount" value="5" class="w-9 text-center text-sm tnum" onchange="saveToCloud()">
                     <span class="field-label">人</span>
                 </label>
+                <label id="seatColsField" class="field hidden" title="潔牙掃地、出缺勤的座位網格每排人數，建議設成跟教室實際座位一樣">
+                    <span class="field-label">每排</span>
+                    <input type="number" id="seatCols" min="2" max="12" value="6" class="w-9 text-center text-sm tnum" onchange="changeSeatCols(this.value)">
+                </label>
                 <label class="field" title="縮放表格大小">
                     <svg class="ic text-[var(--ink-3)]"><use href="#i-zoom"/></svg>
                     <input type="range" id="uiZoom" min="0.5" max="1.1" step="0.05" value="1" oninput="changeZoom(this.value)" class="w-16 md:w-24" aria-label="縮放表格大小">
@@ -351,9 +378,9 @@
         </div>
 
         <div id="taskView" class="scroll-section"><table class="w-full"><thead id="taskHeader"></thead><tbody id="taskBody"></tbody></table></div>
-        <div id="cleanView" class="scroll-section hidden"><table class="w-full"><thead id="cleanHeader"></thead><tbody id="cleanBody"></tbody></table></div>
+        <div id="cleanView" class="scroll-section hidden"><div id="cleanFocus"></div></div>
         <div id="gradeView" class="scroll-section hidden"><table class="w-full"><thead id="gradeHeader"></thead><tbody id="gradeBody"></tbody></table></div>
-        <div id="attView" class="scroll-section hidden"><table class="w-full"><thead id="attHeader"></thead><tbody id="attendanceBody"></tbody></table></div>
+        <div id="attView" class="scroll-section hidden"><div id="attFocus"></div></div>
 
         <!-- 總覽面板 -->
         <div id="reportPanel" class="report-section sm:rounded-b-[1.5rem] report-open">
@@ -533,8 +560,9 @@
             const opts = { animation: 200, handle: '.drag-handle', filter: 'button, .state-btn, input, textarea', preventOnFilter: false, delay: 150, delayOnTouchOnly: true, ghostClass: 'sortable-ghost' };
             if(taskSortable) taskSortable.destroy();
             if(document.getElementById('taskBody')) { taskSortable = new Sortable(document.getElementById('taskBody'), { ...opts, onEnd: function (evt) { const movedItem = tasks.splice(evt.oldIndex, 1)[0]; tasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
-            if(cleanSortable) cleanSortable.destroy();
-            if(document.getElementById('cleanBody')) { cleanSortable = new Sortable(document.getElementById('cleanBody'), { ...opts, onEnd: function (evt) { const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0]; cleanTasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
+            // 潔牙掃地的 chip 列只有在清單非空時才渲染，destroy 後要把參考清掉，否則下次會對已銷毀的實例再 destroy 而拋例外
+            if(cleanSortable) { cleanSortable.destroy(); cleanSortable = null; }
+            if(document.getElementById('cleanChips')) { cleanSortable = new Sortable(document.getElementById('cleanChips'), { ...opts, onEnd: function (evt) { const movedItem = cleanTasks.splice(evt.oldIndex, 1)[0]; cleanTasks.splice(evt.newIndex, 0, movedItem); saveToCloud(); }}); }
         }
 
         function openPasswordModal() {
@@ -589,6 +617,7 @@
                 // 載入該帳號的縮放設定
                 const savedZoom = localStorage.getItem(`zoom_${currentUser.uid}`);
                 if(savedZoom) { document.getElementById('uiZoom').value = savedZoom; changeZoom(savedZoom); }
+                document.getElementById('seatCols').value = getSeatCols();
 
                 startDatabaseSync();
             } else {
@@ -710,7 +739,8 @@
             const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
             btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('btnPrintChecklist').classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
-            document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att'); 
+            document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att');
+            document.getElementById('seatColsField').classList.toggle('hidden', tab !== 'clean' && tab !== 'att');
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
             renderAll();
         }
@@ -772,11 +802,23 @@
             window.open(`https://line.me/R/msg/text/?${encodeURIComponent(textarea.value)}`, '_blank');
         }
 
+        // Enter：往右一格（原本的行為）；Tab：往下到下一個座號的同一小項，最後一號會接到下一個小項的 1 號；Shift+Tab 反向
         function handleGradeEnter(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); const inputs = Array.from(document.querySelectorAll('.grade-input')); const currentIndex = inputs.indexOf(e.target); e.target.blur();
-                if(currentIndex > -1 && currentIndex < inputs.length - 1) { pendingNextFocusIndex = currentIndex + 1; } else if (currentIndex === inputs.length - 1) { pendingNextFocusIndex = 0; }
-            }
+            if (e.isComposing) return;
+            const inputs = Array.from(document.querySelectorAll('.grade-input'));
+            let order;
+            if (e.key === 'Enter') { order = inputs; }
+            else if (e.key === 'Tab') { order = inputs.slice().sort((a, b) => (a.dataset.col - b.dataset.col) || (a.dataset.sid - b.dataset.sid)); }
+            else return;
+            e.preventDefault();
+            const pos = order.indexOf(e.target); if (pos === -1 || order.length === 0) return;
+            const step = (e.key === 'Tab' && e.shiftKey) ? -1 : 1;
+            const target = order[(pos + step + order.length) % order.length];
+            pendingNextFocusIndex = Number(target.dataset.index);
+            // blur 會同步觸發 onchange → renderAll 重繪並聚焦到 pendingNextFocusIndex；
+            // 若分數沒有變動就不會重繪，這時直接把焦點移過去
+            e.target.blur();
+            if (pendingNextFocusIndex !== null) { target.focus(); target.select(); pendingNextFocusIndex = null; }
         }
 
         function renderGrades() {
@@ -806,13 +848,13 @@
             let gBody = ''; let globalInputIndex = 0;
             for(let i=1; i<=count; i++) {
                 let rowHtml = `<tr><td class="sticky-left p-3 text-center font-black text-xl border-b tnum">${i}</td>`;
-                let totalScoreSum = 0; let totalWeightSum = 0;
+                let totalScoreSum = 0; let totalWeightSum = 0; let colIndex = 0;
                 subData.categories.forEach((cat, cIdx) => {
                     if(cat.exams.length === 0) { rowHtml += `<td class="border-b text-center text-[var(--ink-3)]">–</td>`; } else {
                         let catScoreSum = 0; let catWeightSum = 0;
                         cat.exams.forEach((ex, eIdx) => {
                             const key = `${cat.name}_${ex.name}`; const val = subData.scores[i]?.[key] !== undefined ? subData.scores[i][key] : "";
-                            rowHtml += `<td class="p-2 border-b border-r text-center"><input type="number" class="grade-input" data-index="${globalInputIndex}" value="${val}" onchange="updateScore(${i}, '${key}', this.value)" onkeydown="handleGradeEnter(event)" placeholder="-"></td>`;
+                            rowHtml += `<td class="p-2 border-b border-r text-center"><input type="number" class="grade-input" data-index="${globalInputIndex}" data-sid="${i}" data-col="${colIndex++}" value="${val}" onchange="updateScore(${i}, '${key}', this.value)" onkeydown="handleGradeEnter(event)" placeholder="-"></td>`;
                             globalInputIndex++; const w = Number(ex.weight) || 1; if(val !== "") { catScoreSum += Number(val) * w; catWeightSum += w; }
                         });
                         let catAvg = catWeightSum > 0 ? (catScoreSum / catWeightSum) : null;
@@ -873,6 +915,68 @@
             }
         }
 
+        // ===== 潔牙掃地、出缺勤：座位網格 + 單一項目聚焦（參考離線版） =====
+        // 只改畫面呈現，資料結構（cleanTasks、historyClean、historyAtt）完全不變。
+        // 聚焦目標記「名稱」而不是索引，刪除或拖曳排序之後仍然對應到同一個項目。
+        let focusedCleanName = null;
+
+        // 每排人數只存在本機，不寫入雲端資料，以免影響備份還原的欄位驗證
+        function getSeatCols() { const v = parseInt(localStorage.getItem('v36_seat_cols')); return (v >= 2 && v <= 12) ? v : 6; }
+        function changeSeatCols(val) {
+            const n = Math.min(12, Math.max(2, parseInt(val) || 6));
+            localStorage.setItem('v36_seat_cols', n);
+            document.getElementById('seatCols').value = n;
+            renderAll();
+        }
+        function seatGrid(cells) { return `<div class="seat-grid" style="--seat-cols:${getSeatCols()}">${cells}</div>`; }
+
+        function focusCleanAt(i) { focusedCleanName = cleanTasks[i]; renderAll(); }
+        function cycleFocusedClean(sid) { cycleClean(sid, focusedCleanName); }
+        function completeAllFocusedClean() { completeAllClean(focusedCleanName); }
+        function deleteFocusedClean() { deleteCleanTask(cleanTasks.indexOf(focusedCleanName)); }
+
+        function renderCleanFocus(count, todaysClean) {
+            const host = document.getElementById('cleanFocus');
+            if (cleanTasks.length === 0) { host.innerHTML = `<div class="empty-note">還沒有檢核項目。在上方輸入項目名稱後按「新增」。</div>`; return; }
+            if (!cleanTasks.includes(focusedCleanName)) focusedCleanName = cleanTasks[0];
+            const t = focusedCleanName;
+
+            const chips = cleanTasks.map((name, i) => {
+                let done = 0;
+                for (let s = 1; s <= count; s++) if (((todaysClean[s] || {})[name] || 0) === 1) done++;
+                const allDone = count > 0 && done === count;
+                return `<div class="focus-chip ${name === t ? 'is-active' : ''} ${allDone ? 'is-complete' : ''}"><span class="drag-handle" title="拖曳排序">${ic('grip')}</span><button class="focus-chip-btn" onclick="focusCleanAt(${i})"><span>${name}</span><span class="focus-chip-count">${allDone ? '全過關' : done + '/' + count}</span></button></div>`;
+            }).join('');
+
+            const lbls = ["未完成", "完成"];
+            let cells = '';
+            for (let i = 1; i <= count; i++) {
+                const s = (todaysClean[i] && todaysClean[i][t]) || 0;
+                cells += `<div class="seat-cell"><button onclick="cycleFocusedClean(${i})" class="state-btn clean-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></div>`;
+            }
+
+            host.innerHTML = `<div class="chip-row" id="cleanChips">${chips}</div>
+                <div class="focus-bar">
+                    <div class="focus-title">${t}</div>
+                    <div class="focus-actions">
+                        <button onclick="completeAllFocusedClean()" class="btn btn-quiet btn-sm">${ic('check')}全班過關</button>
+                        <button onclick="deleteFocusedClean()" class="btn btn-danger-quiet btn-sm">${ic('x')}刪除此項目</button>
+                    </div>
+                </div>${seatGrid(cells)}`;
+        }
+
+        function renderAttFocus(count, todaysAtt) {
+            let cells = '';
+            for (let i = 1; i <= count; i++) {
+                const s = todaysAtt[i] || 0;
+                cells += `<div class="seat-cell"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></div>`;
+            }
+            document.getElementById('attFocus').innerHTML = `<div class="focus-bar">
+                    <div class="focus-title">今日出勤狀態</div>
+                    <span class="focus-meta">點按鈕依序切換假別</span>
+                </div>${seatGrid(cells)}`;
+        }
+
         function renderAll() {
             let currentFocusIndex = null; let activeEl = document.activeElement;
             if (activeEl && activeEl.classList.contains('grade-input')) { currentFocusIndex = activeEl.dataset.index; }
@@ -913,16 +1017,8 @@
             });
             tBody.innerHTML = tBodyHtml;
 
-            const cBody = document.getElementById('cleanBody'); document.getElementById('cleanHeader').innerHTML = `<tr><th class="sticky-cross task-name-cell text-left pl-5 text-base">股長檢核項目</th>${studentsHeader}</tr>`; let cBodyHtml = '';
-            cleanTasks.forEach((t, index) => {
-                let row = `<tr><td class="sticky-left task-name-cell px-3 py-3 border-b"><div class="flex items-start gap-1.5"><span class="drag-handle mt-0.5" title="拖曳排序">${ic('grip')}</span><div class="min-w-0 flex-1"><div class="font-black text-[var(--ink)] text-base md:text-lg leading-snug break-words">${t}</div><div class="flex gap-1.5 mt-2"><button onclick="completeAllClean('${t}')" class="btn btn-quiet btn-sm">${ic('check')}全過關</button><button onclick="deleteCleanTask(${index})" class="btn btn-danger-quiet btn-sm btn-icon" title="刪除此項目" aria-label="刪除此項目">${ic('x')}</button></div></div></div></td>`;
-                for (let i = 1; i <= count; i++) { const s = (todaysClean[i] && todaysClean[i][t]) || 0; const lbls = ["未完成", "完成"]; row += `<td class="p-1.5 md:p-2 border-b"><button onclick="cycleClean(${i},'${t}')" class="state-btn clean-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></td>`; }
-                cBodyHtml += row + '</tr>';
-            });
-            cBody.innerHTML = cBodyHtml;
-
-            const aBody = document.getElementById('attendanceBody'); document.getElementById('attHeader').innerHTML = `<tr><th class="sticky-cross task-name-cell text-left pl-5 text-base">出勤項目</th>${studentsHeader}</tr>`; let attRow = `<tr><td class="sticky-left task-name-cell px-5 py-4 border-b"><div class="font-black text-[var(--ink)] text-base md:text-lg">今日狀態</div><div class="text-xs font-bold text-[var(--ink-3)] mt-1">點按鈕依序切換假別</div></td>`;
-            for (let i = 1; i <= count; i++) { const s = todaysAtt[i] || 0; attRow += `<td class="p-1.5 md:p-2 border-b"><button onclick="cycleAttendance(${i})" class="state-btn att-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[s]}</span></button></td>`; } aBody.innerHTML = attRow + '</tr>';
+            renderCleanFocus(count, todaysClean);
+            renderAttFocus(count, todaysAtt);
 
             if(currentTab === 'grade') renderGrades();
 
@@ -959,7 +1055,7 @@
                     taskDates[val] = document.getElementById('currentDate').value; 
                 } 
             }
-            else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } }
+            else if(currentTab === 'clean') { if(!cleanTasks.includes(val)) { cleanTasks.push(val); } focusedCleanName = val; } // 新增後直接聚焦過去，否則畫面停在舊項目像沒反應
             else if(currentTab === 'grade') { if(!grades[currentGradeSubject].categories.find(c => c.name === val)) { grades[currentGradeSubject].categories.push({ name: val, weight: 1, exams: [] }); } }
             document.getElementById('itemName').value = '';
             if(currentTab === 'grade') renderGrades(); else renderAll();
