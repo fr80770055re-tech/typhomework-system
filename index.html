@@ -389,6 +389,7 @@
 
                 <button onclick="toggleAnnounceDrawer(true)" class="btn btn-quiet relative"><svg class="ic"><use href="#i-megaphone"/></svg>宣導<span id="announceDot" class="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--accent)] rounded-full hidden"></span></button>
                 <button onclick="openNoteModal()" class="btn btn-quiet"><svg class="ic"><use href="#i-note"/></svg>記事</button>
+                <button onclick="openDayMissingModal()" id="btnDayMissing" class="btn btn-quiet"><svg class="ic"><use href="#i-calendar-check"/></svg>當日未交</button>
                 <button onclick="openReminderModal()" id="btnReminder" class="btn btn-quiet"><svg class="ic"><use href="#i-send"/></svg>繳交提醒</button>
                 <button onclick="openPrintModal()" id="btnPrintChecklist" class="btn btn-quiet"><svg class="ic"><use href="#i-printer"/></svg>列印缺交單</button>
                 <button onclick="openPasswordModal()" class="btn btn-quiet" title="家長查詢密碼設定"><svg class="ic"><use href="#i-key"/></svg><span class="hidden lg:inline">家長密碼</span></button>
@@ -525,6 +526,22 @@
                 <button onclick="closeRestoreModal()" class="btn btn-quiet flex-1 !h-12">取消</button>
                 <button onclick="confirmRestore()" id="btnConfirmRestore" class="btn btn-accent flex-1 !h-12"><svg class="ic"><use href="#i-upload"/></svg>確認還原</button>
             </div>
+        </div>
+    </div>
+
+    <div id="dayMissingModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black" onclick="if(event.target === this) closeDayMissingModal()">
+        <div class="glass-panel p-6 md:p-8 rounded-[1.5rem] w-11/12 max-w-2xl flex flex-col max-h-[88vh]">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-calendar-check"/></svg>當日作業未交</h2>
+                <button onclick="closeDayMissingModal()" class="btn btn-quiet btn-icon" aria-label="關閉"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <div class="flex gap-2 mb-4 shrink-0">
+                <button onclick="stepDayMissing(-1)" class="btn btn-quiet btn-icon !h-12 !w-12" title="上一個有指派作業的日期" aria-label="上一個有指派作業的日期"><svg class="ic" style="transform: rotate(90deg)"><use href="#i-chevron-down"/></svg></button>
+                <label class="field flex-1 !h-12"><span class="field-label shrink-0">指派日期</span><input type="date" id="dayMissingDate" onchange="renderDayMissing()" class="flex-1 tnum text-base"></label>
+                <button onclick="stepDayMissing(1)" class="btn btn-quiet btn-icon !h-12 !w-12" title="下一個有指派作業的日期" aria-label="下一個有指派作業的日期"><svg class="ic" style="transform: rotate(-90deg)"><use href="#i-chevron-down"/></svg></button>
+            </div>
+            <div id="dayMissingSummary" class="shrink-0 mb-3"></div>
+            <div id="dayMissingBody" class="flex-1 min-h-0 overflow-y-auto pr-1"></div>
         </div>
     </div>
 
@@ -784,7 +801,7 @@
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
-            btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('btnPrintChecklist').classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
+            btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('btnDayMissing').classList.toggle('hidden', tab !== 'task'); document.getElementById('btnPrintChecklist').classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att');
             document.getElementById('seatColsField').classList.toggle('hidden', tab !== 'clean' && tab !== 'att');
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
@@ -1287,6 +1304,46 @@
             document.getElementById('printSummary').innerHTML = list.length ? `將列印 <span class="tnum">${list.length}</span> 位學生，共 <span class="tnum">${pages}</span> 張 A4` : '<span class="text-[var(--ink-3)]">目前沒有符合條件的學生，不需要列印。</span>';
             btn.disabled = !list.length; btn.classList.toggle('opacity-40', !list.length); btn.classList.toggle('cursor-not-allowed', !list.length);
         }
+        // 當日作業未交：依「指派日期」(taskDates) 列出當天指派的作業，只看狀態為未交(0)的學生；唯讀，不寫入任何資料
+        function openDayMissingModal() {
+            document.getElementById('dayMissingDate').value = document.getElementById('currentDate').value;
+            renderDayMissing(); document.getElementById('dayMissingModal').classList.replace('hidden', 'flex');
+        }
+        function closeDayMissingModal() { document.getElementById('dayMissingModal').classList.replace('flex', 'hidden'); }
+        // 跳到上一個／下一個有指派作業的日期，不必一天一天翻
+        function stepDayMissing(dir) {
+            const cur = document.getElementById('dayMissingDate').value;
+            const dates = [...new Set(tasks.map(t => taskDates[t]).filter(Boolean))].sort();
+            const next = dir > 0 ? dates.find(d => d > cur) : dates.filter(d => d < cur).pop();
+            if (next) { document.getElementById('dayMissingDate').value = next; renderDayMissing(); }
+        }
+        function renderDayMissing() {
+            const date = document.getElementById('dayMissingDate').value; const count = parseInt(document.getElementById('studentCount').value) || 0;
+            const dayTasks = tasks.filter(t => taskDates[t] === date);
+            const undated = tasks.filter(t => !taskDates[t]).length;
+            const undatedNote = undated ? `<div class="text-xs font-bold text-[var(--ink-3)] mt-3">另有 ${undated} 項作業沒有記錄指派日期，不會出現在依日期的檢視中。</div>` : '';
+            const body = document.getElementById('dayMissingBody'); const summary = document.getElementById('dayMissingSummary');
+            if (!dayTasks.length) {
+                summary.innerHTML = '';
+                body.innerHTML = `<div class="text-center text-[var(--ink-3)] bg-[var(--surface-2)] rounded-xl font-black py-12">這一天沒有指派作業。<div class="text-sm font-bold mt-1">可用左右箭頭跳到有作業的日期。</div></div>${undatedNote}`;
+                return;
+            }
+            const byStudent = {}; let totalMissing = 0;
+            const rows = dayTasks.map(t => {
+                const missing = [];
+                for (let i = 1; i <= count; i++) if (((globalTaskData[i] || {})[t] || 0) === 0) { missing.push(i); (byStudent[i] = byStudent[i] || []).push(t); }
+                totalMissing += missing.length;
+                const list = missing.length
+                    ? `<div class="flex flex-wrap gap-1.5 mt-2">${missing.map(i => `<span class="chip chip-missing !text-sm !px-2.5 !py-1 tnum">${i} 號</span>`).join('')}</div>`
+                    : '';
+                return `<div class="report-item"><div class="flex items-center gap-2 flex-wrap"><span class="text-[var(--ink)] font-black text-base">${escapeHtml(t)}</span>${missing.length ? `<span class="chip chip-missing">未交 ${missing.length}</span>` : `<span class="chip chip-done">${ic('check', '!w-3 !h-3')}全員已交</span>`}</div>${list}</div>`;
+            }).join('');
+            const sids = Object.keys(byStudent).map(Number).sort((a, b) => a - b);
+            summary.innerHTML = `<div class="text-base font-black text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--line)] rounded-xl px-4 py-3">當天指派 <span class="tnum">${dayTasks.length}</span> 項作業${sids.length ? `，<span class="text-[var(--accent-hover)]"><span class="tnum">${sids.length}</span> 位學生</span>共未交 <span class="tnum">${totalMissing}</span> 項` : '，全班都已繳交'}</div>`;
+            const studentList = sids.length ? `<div class="report-title mt-5">依學生</div>${sids.map(i => `<div class="report-row !mt-1.5"><span class="font-black tnum w-12 shrink-0">${i} 號</span><span class="font-bold text-[var(--ink-2)]">${byStudent[i].map(escapeHtml).join('、')}</span></div>`).join('')}` : '';
+            body.innerHTML = `<div class="report-title">依作業</div>${rows}${studentList}${undatedNote}`;
+        }
+
         function openPrintModal() { updatePrintSummary(); document.getElementById('printModal').classList.replace('hidden', 'flex'); }
         function closePrintModal() { document.getElementById('printModal').classList.replace('flex', 'hidden'); }
         function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
