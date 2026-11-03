@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    <script src="parent-board.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -654,7 +655,15 @@
 
             const data = { tasks, taskDates, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, grades, studentPasswords, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
             db.ref('users/' + currentUser.uid).set(data).catch(err => console.error("同步失敗:", err));
-            db.ref('public_board/my_class').set(data);
+            publishParentBoard(data).catch(err => console.error("家長查詢頁同步失敗:", err));
+        }
+
+        // 依序發布，確保連續操作時最後寫入雲端的是最新狀態
+        let parentBoardQueue = Promise.resolve();
+        function publishParentBoard(data) {
+            const run = parentBoardQueue.then(() => ParentBoard.buildBoard(data)).then(board => db.ref('public_board/my_class').set(board));
+            parentBoardQueue = run.catch(() => {});
+            return run;
         }
 
         function toggleAnnounceDrawer(show) { const drawer = document.getElementById('announceDrawer'); if (show) { drawer.classList.replace('hidden', 'flex'); document.getElementById('announceDot').classList.add('hidden'); } else { drawer.classList.replace('flex', 'hidden'); } }
@@ -758,7 +767,7 @@
             const done = () => { btn.disabled = false; btn.classList.remove('opacity-60'); };
             db.ref('users/' + currentUser.uid).set(data).then(() => {
                 closeRestoreModal();
-                return db.ref('public_board/my_class').set(data)
+                return publishParentBoard(data)
                     .then(() => alert('已從備份還原完成。還原前的資料已另外下載保存。'))
                     .catch(err => { console.error('家長查詢頁同步失敗:', err); alert('班級資料已從備份還原，但家長查詢頁同步失敗。請確認網路後，隨意切換一個按鈕狀態再改回來，即可重新同步。'); });
             }).catch(err => { console.error('還原失敗:', err); alert('還原失敗，雲端資料未變更。請確認網路連線後再試一次。\n' + (err && err.message ? err.message : '')); })
@@ -790,6 +799,8 @@
                     if(data.studentCount) document.getElementById('studentCount').value = data.studentCount;
                     renderAll(); 
                     if(document.getElementById('examScheduleInput')) document.getElementById('examScheduleInput').value = examScheduleStr;
+                    // 教師登入時重新發布一次，讓公開區一律維持最新格式（舊版曾存放完整班級資料）
+                    if (isFirstLoad) publishParentBoard(data).catch(err => console.error("家長查詢頁同步失敗:", err));
                 } else if (isFirstLoad) { saveToCloud(); }
                 isFirstLoad = false;
                 const syncIcon = document.getElementById('syncStatus');

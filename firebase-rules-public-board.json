@@ -1,0 +1,29 @@
+{
+  "public_board": {
+    "my_class": {
+      ".write": "auth != null && auth.uid === 'gITUMG3dVeSpPpqfXemlBYelLge2'",
+      ".validate": "newData.hasChildren(['shared', 'students'])",
+      "shared": {
+        ".read": true,
+        ".validate": "newData.hasChildren(['studentCount'])",
+        "tasks": { ".validate": true },
+        "taskDates": { ".validate": true },
+        "announcements": { ".validate": "newData.isString()" },
+        "studentCount": { ".validate": "newData.isString()" },
+        "$other": { ".validate": false }
+      },
+      "students": {
+        "$key": {
+          ".read": true,
+          ".validate": "$key.matches(/^[0-9a-f]{64}$/) && newData.hasChildren(['v'])",
+          "v": { ".validate": "newData.isNumber()" },
+          "tasks": {
+            "$task": { ".validate": "newData.isNumber()" }
+          },
+          "$other": { ".validate": false }
+        }
+      },
+      "$other": { ".validate": false }
+    }
+  }
+}
