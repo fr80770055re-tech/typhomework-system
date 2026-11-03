@@ -11,6 +11,7 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    <script src="parent-board.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Naguri&family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
@@ -51,7 +52,7 @@
                     <input type="password" id="passwordInput" placeholder="請輸入身分證後四碼" maxlength="4" class="w-full bg-white border-2 border-[#d3cabc] text-stone-700 font-black text-xl py-3 px-4 rounded-2xl shadow-sm outline-none focus:border-[#dfa888] focus:ring-4 focus:ring-[#dfa888]/20 transition-all text-center tracking-[0.5em]">
                 </div>
 
-                <button onclick="verifyAndRender()" class="w-full bg-[#dfa888] text-white py-3.5 rounded-2xl font-black text-xl shadow-sm hover:bg-[#c99070] transition active:scale-95">登入查詢</button>
+                <button id="loginButton" onclick="verifyAndRender()" class="w-full bg-[#dfa888] text-white py-3.5 rounded-2xl font-black text-xl shadow-sm hover:bg-[#c99070] transition active:scale-95">登入查詢</button>
             </div>
 
             <!-- 連線狀態 -->
@@ -101,8 +102,10 @@
 
         let classData = null; 
         let currentAuthenticatedSid = null;
+        let studentRecord = null;
+        let studentRef = null;
 
-        db.ref('public_board/my_class').on('value', (snapshot) => {
+        db.ref('public_board/my_class/shared').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 classData = data;
@@ -121,14 +124,14 @@
                 }
                 
                 // 如果已經驗證過密碼，當老師更新資料時，家長畫面自動重繪更新
-                if (currentAuthenticatedSid) {
-                    renderStudentData(currentAuthenticatedSid);
+                if (currentAuthenticatedSid && studentRecord) {
+                    renderStudentData();
                 }
             }
         });
 
         // 🌟 密碼驗證邏輯 🌟
-        function verifyAndRender() {
+        async function verifyAndRender() {
             if (!classData) return alert("系統還在讀取中，請稍候...");
             
             const sid = document.getElementById('studentSelect').value;
@@ -137,22 +140,45 @@
             if (sid === "0") return alert("請先選擇孩子的座號！");
             if (inputPwd === "") return alert("請輸入查詢密碼！");
 
-            // 去雲端抓取老師設定好的密碼 (預設為 0000)
-            const realPwd = (classData.studentPasswords && classData.studentPasswords[sid]) ? classData.studentPasswords[sid] : "0000";
+            const btn = document.getElementById('loginButton');
+            btn.disabled = true; btn.classList.add('opacity-60');
+            try {
+                // 座號＋密碼算出的位置才有資料；算錯就什麼都讀不到
+                const key = await ParentBoard.deriveStudentKey(sid, inputPwd);
+                const ref = db.ref(`public_board/my_class/students/${key}`);
+                const snapshot = await ref.once('value');
+                if (!snapshot.exists()) {
+                    alert("❌ 密碼錯誤！請確認身分證後4碼是否正確，或向導師確認。");
+                    document.getElementById('passwordInput').value = '';
+                    return;
+                }
 
-            if (inputPwd !== realPwd) {
-                alert("❌ 密碼錯誤！請確認身分證後4碼是否正確，或向導師確認。");
+                // 驗證成功，隱藏登入區塊，顯示資料
+                currentAuthenticatedSid = sid;
                 document.getElementById('passwordInput').value = '';
-                return;
+                document.getElementById('loginSection').classList.add('hidden');
+                studentRef = ref;
+                ref.on('value', onStudentRecord);
+            } catch (err) {
+                console.error('查詢失敗:', err);
+                alert("連線失敗，請確認網路後再試一次。");
+            } finally {
+                btn.disabled = false; btn.classList.remove('opacity-60');
             }
-
-            // 驗證成功，隱藏登入區塊，顯示資料
-            currentAuthenticatedSid = sid;
-            document.getElementById('loginSection').classList.add('hidden');
-            renderStudentData(sid);
         }
 
-        function renderStudentData(sid) {
+        function onStudentRecord(snapshot) {
+            studentRecord = snapshot.val();
+            if (studentRecord) { renderStudentData(); return; }
+            // 老師更改密碼後舊位置會消失，請家長重新輸入
+            studentRef.off('value', onStudentRecord);
+            studentRef = null; currentAuthenticatedSid = null;
+            document.getElementById('dataContainer').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            alert("查詢密碼已更新，請重新輸入。");
+        }
+
+        function renderStudentData() {
             const container = document.getElementById('dataContainer');
             container.classList.remove('hidden');
 
@@ -169,7 +195,7 @@
             taskList.innerHTML = '';
             
             const tasks = classData.tasks || [];
-            const globalTaskData = classData.globalTaskData || {};
+            const studentTasks = studentRecord.tasks || {};
             const taskDates = classData.taskDates || {};
 
             if (tasks.length === 0) {
@@ -178,7 +204,7 @@
             }
 
             tasks.forEach(taskName => {
-                const s = (globalTaskData[sid] && globalTaskData[sid][taskName]) || 0;
+                const s = studentTasks[taskName] || 0;
                 const statusInfo = {
                     0: { text: "✕ 未繳交", class: "status-0" },
                     1: { text: "⚠️ 待訂正", class: "status-1" },
