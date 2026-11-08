@@ -22,6 +22,12 @@
         .status-1 { background-color: #ffedd5; color: #b45309; border: 1px solid #fed7aa; } 
         .status-2 { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; } 
         .status-3 { background-color: #fae8ff; color: #86198f; border: 1px solid #f5d0fe; } 
+        /* 出缺勤色系與教師端一致 */
+        .att-1 { background: #f4dc9c; color: #614a0c; border: 1px solid #dfc278; }
+        .att-2 { background: #efc3b9; color: #7a2a1d; border: 1px solid #dda193; }
+        .att-3 { background: #cfe0f1; color: #234a6e; border: 1px solid #a9c5e0; }
+        .att-4 { background: #d9dcdf; color: #3c434a; border: 1px solid #bec3c8; }
+        .att-5 { background: #e2d6f0; color: #4a3366; border: 1px solid #c6b2de; }
     </style>
 </head>
 <body class="bg-[#f0ebe1] min-h-screen flex flex-col items-center p-4 md:p-8">
@@ -75,6 +81,12 @@
                 <div>
                     <h2 class="text-lg font-black text-stone-700 mb-3 flex items-center gap-2"><span>📚</span> 今日作業與資料繳交</h2>
                     <div id="taskList" class="space-y-3"></div>
+                </div>
+
+                <div>
+                    <h2 class="text-lg font-black text-stone-700 mb-3 flex items-center gap-2"><span>📅</span> 出缺勤紀錄 <span id="attRange" class="text-xs font-bold text-stone-400"></span></h2>
+                    <div id="attSummary" class="grid grid-cols-5 gap-2 mb-3"></div>
+                    <div id="attList" class="space-y-2 max-h-72 overflow-y-auto"></div>
                 </div>
             </div>
 
@@ -191,6 +203,8 @@
                 aList.classList.add('hidden'); emptyText.classList.remove('hidden');
             }
 
+            renderAttendance();
+
             const taskList = document.getElementById('taskList');
             taskList.innerHTML = '';
             
@@ -220,6 +234,34 @@
                         <div class="status-badge ${info.class}">${info.text}</div>
                     </div>`;
             });
+        }
+
+        function renderAttendance() {
+            const labels = { 1: "事假", 2: "病假", 3: "公假", 4: "喪假", 5: "遲到" };
+            const att = studentRecord.att || {};
+            const [, sm, sd] = ParentBoard.ATT_START.split('-').map(Number);
+            document.getElementById('attRange').innerText = `（${sm}/${sd} 起）`;
+
+            const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            Object.values(att).forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+            document.getElementById('attSummary').innerHTML = [1, 2, 3, 4, 5].map(s => `
+                <div class="att-${s} rounded-xl py-2 text-center">
+                    <div class="text-xs font-black">${labels[s]}</div>
+                    <div class="text-xl font-black">${counts[s]}</div>
+                </div>`).join('');
+
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const dates = Object.keys(att).sort().reverse();
+            document.getElementById('attList').innerHTML = dates.length === 0
+                ? '<div class="text-center p-4 bg-white rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 font-bold">全勤，沒有請假或遲到紀錄</div>'
+                : dates.map(d => {
+                    const [y, m, day] = d.split('-').map(Number);
+                    const wd = weekdays[new Date(y, m - 1, day).getDay()];
+                    return `<div class="flex items-center justify-between px-4 py-2.5 bg-white rounded-xl border border-stone-100 shadow-sm">
+                        <span class="font-black text-stone-700 font-mono">${m}/${day}（${wd}）</span>
+                        <span class="status-badge att-${att[d]}">${labels[att[d]] || ''}</span>
+                    </div>`;
+                }).join('');
         }
     </script>
 </body>

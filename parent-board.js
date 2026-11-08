@@ -1,8 +1,10 @@
 // 家長查詢端的公開資料：教師端發布、家長端讀取，兩端共用同一套產生規則。
 // shared 只放全班共用資訊；每位學生的繳交狀態存在由「座號＋密碼」算出的位置，
 // 資料庫規則禁止列出 students 底下的項目，因此不知道密碼就找不到該筆資料。
-// 密碼、輔導記事、出缺勤、成績都不會離開教師自己的 users/{uid}。
+// 出缺勤只發布該生自 ATT_START 起的請假與遲到紀錄，同樣存在該生自己的位置。
+// 密碼、輔導記事、成績都不會離開教師自己的 users/{uid}。
 (function (root) {
+    const ATT_START = '2026-08-31';
     const KEY_SALT = 'typhomeworksystem/parent-board/v1';
     const KEY_ITERATIONS = 200000;
     const keyCache = new Map();
@@ -29,6 +31,8 @@
 
         const passwords = data.studentPasswords || {};
         const allStatus = data.globalTaskData || {};
+        const allAtt = data.historyAtt || {};
+        const attDates = Object.keys(allAtt).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= ATT_START);
         const students = {};
         for (let sid = 1; sid <= count; sid++) {
             const own = {};
@@ -36,11 +40,16 @@
                 const s = allStatus[sid][t];
                 if (tasks.includes(safeName(t)) && s) own[safeName(t)] = s;
             });
+            const att = {};
+            attDates.forEach(d => {
+                const s = Number(allAtt[d] && allAtt[d][sid]) || 0;
+                if (s >= 1 && s <= 5) att[d] = s;
+            });
             // v 讓沒有任何繳交紀錄的學生也有一筆資料，家長端才能區分「密碼錯誤」
-            students[await deriveStudentKey(sid, passwords[sid] || '0000')] = { v: 1, tasks: own };
+            students[await deriveStudentKey(sid, passwords[sid] || '0000')] = { v: 1, tasks: own, att };
         }
         return { shared: { tasks, taskDates, announcements: data.announcements || '', studentCount: String(count) }, students };
     }
 
-    root.ParentBoard = { deriveStudentKey, buildBoard };
+    root.ParentBoard = { ATT_START, deriveStudentKey, buildBoard };
 })(globalThis);

@@ -20,6 +20,9 @@
           "tasks": {
             "$task": { ".validate": "newData.isNumber()" }
           },
+          "att": {
+            "$date": { ".validate": "$date.matches(/^20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]$/) && newData.isNumber() && newData.val() >= 1 && newData.val() <= 5" }
+          },
           "$other": { ".validate": false }
         }
       },
