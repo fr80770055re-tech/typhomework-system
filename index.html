@@ -404,6 +404,11 @@
             <textarea id="broadcastInput" maxlength="200" placeholder="例如：拿出聯絡簿，抄寫今天的作業" class="w-full h-32 p-4 border border-[var(--line)] rounded-xl outline-none focus:border-[var(--focus)] resize-none text-xl font-bold text-[var(--ink)] bg-white leading-relaxed"></textarea>
             <div class="mt-3 text-xs font-bold text-[var(--ink-3)]">常用／最近送出（點一下帶入）</div>
             <div id="broadcastPicks" class="mt-2 flex flex-wrap gap-2"></div>
+            <div id="broadcastNotify" class="hidden mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-3 items-center gap-3">
+                <svg class="ic shrink-0 text-[var(--ink-3)]"><use href="#i-message"/></svg>
+                <div id="broadcastNotifyText" class="flex-1 min-w-0 text-sm font-bold text-[var(--ink-2)]"></div>
+                <button id="broadcastNotifyBtn" onclick="enableBroadcastNotify()" class="btn btn-quiet btn-sm shrink-0">開啟通知</button>
+            </div>
             <div class="mt-5 flex justify-end"><button onclick="sendBroadcast()" class="btn btn-accent !h-12 !px-8 !text-base"><svg class="ic"><use href="#i-send"/></svg>送出全屏</button></div>
         </div>
     </div>
@@ -913,7 +918,7 @@
                     
                     tasks = data.tasks || []; globalTaskData = data.globalTaskData || {}; taskDates = data.taskDates || {}; studentPasswords = data.studentPasswords || {}; 
                     historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || ""; cleanTasks = data.cleanTasks || []; historyClean = data.historyClean || {};
-                    broadcast = data.broadcast || null; renderBroadcast();
+                    broadcast = data.broadcast || null; renderBroadcast(); notifyBroadcast();
                     
                     let oldGrades = data.grades || {};
                     ["國語", "數學"].forEach(sub => {
@@ -980,10 +985,46 @@
                 box.appendChild(b);
             });
             document.getElementById('broadcastInput').value = '';
-            renderBroadcast();
+            renderBroadcast(); renderBroadcastNotify();
             document.getElementById('broadcastModal').classList.replace('hidden', 'flex');
             if (!isMobile()) document.getElementById('broadcastInput').focus();
         }
+        // 系統通知：教室電腦在播簡報或切到別的分頁時，用通知提醒，點一下回到全屏訊息
+        let broadcastNotice = null; let broadcastNotifiedAt = 0;
+        const notifySupported = () => 'Notification' in window && window.isSecureContext;
+        function renderBroadcastNotify() {
+            const row = document.getElementById('broadcastNotify');
+            const show = notifySupported() && !isMobile();
+            row.classList.toggle('hidden', !show); row.classList.toggle('flex', show);
+            if (!show) return;
+            const perm = Notification.permission;
+            document.getElementById('broadcastNotifyBtn').classList.toggle('hidden', perm !== 'default');
+            document.getElementById('broadcastNotifyText').textContent =
+                perm === 'granted' ? '這台電腦已開啟通知：畫面在其他程式或分頁時，也會跳出提醒。'
+                : perm === 'denied' ? '這台電腦封鎖了通知。請點網址列左側的圖示，把「通知」改成允許。'
+                : '在教室電腦開啟通知，畫面在其他程式或分頁時也會跳出提醒。';
+        }
+        function enableBroadcastNotify() {
+            if (!notifySupported()) return;
+            Promise.resolve(Notification.requestPermission()).then(renderBroadcastNotify, renderBroadcastNotify);
+        }
+        function closeBroadcastNotice() { if (broadcastNotice) { broadcastNotice.close(); broadcastNotice = null; } }
+        function notifyBroadcast() {
+            if (!broadcastActive()) { closeBroadcastNotice(); return; }
+            if (!notifySupported() || Notification.permission !== 'granted' || isMobile()) return;
+            // 只提醒剛送出的訊息，重新整理或斷線重連時不重複跳出
+            if (broadcast.at === broadcastNotifiedAt || Date.now() - broadcast.at > 5 * 60 * 1000) return;
+            broadcastNotifiedAt = broadcast.at;
+            if (document.hasFocus()) return;
+            closeBroadcastNotice();
+            try {
+                const n = new Notification('老師的全屏訊息', { body: broadcast.text, tag: 'broadcast', renotify: true, requireInteraction: true });
+                n.onclick = () => { window.focus(); n.close(); };
+                n.onclose = () => { if (broadcastNotice === n) broadcastNotice = null; };
+                broadcastNotice = n;
+            } catch (e) {}
+        }
+        window.addEventListener('focus', closeBroadcastNotice);
         function closeBroadcastModal() { document.getElementById('broadcastModal').classList.replace('flex', 'hidden'); }
         function renderBroadcast() {
             const active = broadcastActive(); const big = active && !isMobile();
