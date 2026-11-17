@@ -247,7 +247,40 @@
         @media (max-width: 400px) { .grade-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
         @media (max-height: 500px) and (orientation: landscape) { .control-bar { padding-top: 6px; padding-bottom: 6px; } .tab-btn { padding: 6px 12px; font-size: 0.9rem; } }
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+        /* ===== 動畫（參照「橘子時鐘」：同一條緩出曲線、按壓縮放、彈窗浮起、圓形展開、漂浮圓點） ===== */
+        :root { --ease-out: cubic-bezier(.16, 1, .3, 1); --ease-in: cubic-bezier(.7, 0, .84, 0); }
+        .btn { transition: background-color .15s, border-color .15s, color .15s, transform .35s var(--ease-out); }
+        .btn:active { transform: scale(.95); transition-duration: .08s; }
+        .tab-btn { transition: color .25s var(--ease-out), background-color .25s var(--ease-out); }
+        /* 彈窗：背景淡入，面板由下方浮起 */
+        .modal-anim.flex { animation: scrim-in .35s var(--ease-out) backwards; }
+        .modal-anim.flex > .glass-panel { animation: panel-in .55s var(--ease-out) backwards; }
+        @keyframes scrim-in { from { opacity: 0; } }
+        @keyframes panel-in { from { opacity: 0; transform: translateY(28px) scale(.96); } }
+        /* 宣導看板：條目一則接一則滑入 */
+        #announceDrawer.flex #announceList > li { animation: row-in .6s var(--ease-out) backwards; }
+        #announceDrawer.flex #announceList > li:nth-child(1) { animation-delay: .12s; } #announceDrawer.flex #announceList > li:nth-child(2) { animation-delay: .18s; }
+        #announceDrawer.flex #announceList > li:nth-child(3) { animation-delay: .24s; } #announceDrawer.flex #announceList > li:nth-child(4) { animation-delay: .30s; }
+        #announceDrawer.flex #announceList > li:nth-child(5) { animation-delay: .36s; } #announceDrawer.flex #announceList > li:nth-child(n+6) { animation-delay: .42s; }
+        @keyframes row-in { from { opacity: 0; transform: translateX(36px); } }
+        /* 切換分頁：內容輕輕浮入（只用 backwards，結束後不留 transform，避免影響 sticky／fixed） */
+        .view-in { animation: view-in .45s var(--ease-out) backwards; }
+        @keyframes view-in { from { opacity: 0; transform: translateY(12px); } }
+        /* 狀態格：點擊後彈一下 */
+        .state-btn.pop { animation: state-pop .5s var(--ease-out); }
+        @keyframes state-pop { 0% { transform: scale(.84); } 45% { transform: scale(1.07); } 100% { transform: scale(1); } }
+        /* 全屏訊息與考試大鐘：由中心圓形展開；全屏訊息收起時圓形收回 */
+        #broadcastOverlay.flex, #examClockOverlay.flex { animation: circle-open .75s cubic-bezier(.65, 0, .35, 1) backwards; }
+        #broadcastOverlay.leaving { animation: circle-close .42s var(--ease-in) forwards; pointer-events: none; }
+        @keyframes circle-open { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
+        @keyframes circle-close { from { clip-path: circle(75% at 50% 50%); } to { clip-path: circle(0% at 50% 50%); } }
+        .text-rise { animation: text-rise .8s var(--ease-out) .35s backwards; }
+        @keyframes text-rise { from { opacity: 0; transform: translateY(32px); } }
+        #broadcastBanner.flex { animation: banner-in .5s var(--ease-out) backwards; }
+        @keyframes banner-in { from { opacity: 0; transform: translateY(24px); } }
+        #broadcastFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        #broadcastOverlay > :not(canvas) { position: relative; z-index: 1; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0s !important; } }
 
         /* 列印缺交檢核表：A4 直式、每頁 2×2 四位學生 */
         #printArea { display: none; }
@@ -342,10 +375,11 @@
     </div>
 
     <!-- 全屏訊息：寬螢幕（教室電腦）整頁顯示；手機只顯示底部提示列，方便遠端關閉 -->
-    <div id="broadcastOverlay" class="fixed inset-0 z-[120] hidden flex-col bg-[var(--paper)] text-[var(--ink)] font-black" role="alert">
+    <div id="broadcastOverlay" class="fixed inset-0 z-[120] hidden flex-col bg-[var(--accent)] text-[var(--paper)] font-black" role="alert">
+        <canvas id="broadcastFx" aria-hidden="true"></canvas>
         <div class="flex justify-between items-center px-6 md:px-10 py-5 shrink-0">
-            <span id="broadcastMeta" class="text-xl font-bold text-[var(--ink-3)] tnum"></span>
-            <button onclick="closeBroadcast()" class="btn btn-quiet !h-12 !px-5 !text-base"><svg class="ic"><use href="#i-x"/></svg>關閉訊息</button>
+            <span id="broadcastMeta" class="text-xl font-bold opacity-80 tnum"></span>
+            <button onclick="closeBroadcast()" class="btn btn-on-dark !h-12 !px-5 !text-base"><svg class="ic"><use href="#i-x"/></svg>關閉訊息</button>
         </div>
         <div id="broadcastBox" class="flex-1 min-h-0 flex items-center justify-center px-[6vw] pb-[8vh] overflow-hidden">
             <p id="broadcastText" class="max-w-full text-center leading-[1.3] whitespace-pre-wrap break-words"></p>
@@ -356,7 +390,7 @@
         <div class="min-w-0 flex-1"><div class="text-[11px] font-bold opacity-70">教室螢幕顯示中</div><div id="broadcastBannerText" class="font-black truncate"></div></div>
         <button onclick="closeBroadcast()" class="btn btn-accent btn-sm shrink-0">關閉</button>
     </div>
-    <div id="broadcastModal" class="fixed inset-0 z-[96] bg-[#2a241d]/55 hidden items-center justify-center font-black" onclick="if(event.target === this) closeBroadcastModal()">
+    <div id="broadcastModal" class="fixed inset-0 z-[96] bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black" onclick="if(event.target === this) closeBroadcastModal()">
         <div class="glass-panel p-6 md:p-8 rounded-[1.5rem] w-11/12 max-w-xl">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-message"/></svg>全屏訊息</h2>
@@ -375,7 +409,7 @@
     </div>
 
     <!-- 宣導看板：置中彈窗，方便投影/放大清楚顯示 -->
-    <div id="announceDrawer" class="fixed inset-0 z-[95] bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="announceDrawer" class="fixed inset-0 z-[95] bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-8 md:p-10 rounded-[1.75rem] w-11/12 max-w-3xl flex flex-col max-h-[85vh]">
             <div class="flex justify-between items-center mb-6 border-b border-[var(--line)] pb-4 shrink-0">
                 <h2 class="text-3xl font-black text-[var(--ink)] flex items-center gap-3"><span class="text-[var(--accent)]"><svg class="ic"><use href="#i-megaphone"/></svg></span>班級宣導看板</h2>
@@ -500,7 +534,7 @@
         </div>
     </div>
 
-    <div id="passwordModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="passwordModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center mb-3 shrink-0">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-key"/></svg>家長查詢密碼</h2>
@@ -512,7 +546,7 @@
         </div>
     </div>
 
-    <div id="announceModal" class="fixed inset-0 z-[96] bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="announceModal" class="fixed inset-0 z-[96] bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-2xl">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-megaphone"/></svg>編輯宣導事項</h2>
@@ -524,7 +558,7 @@
         </div>
     </div>
 
-    <div id="noteModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="noteModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-3xl">
             <div class="flex justify-between items-center mb-5">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-note"/></svg>班級記事本 <span id="noteDateDisplay" class="ml-1 text-sm font-black tnum bg-[var(--surface-2)] border border-[var(--line)] text-[var(--ink-2)] px-2.5 py-1 rounded-lg"></span></h2>
@@ -535,7 +569,7 @@
         </div>
     </div>
 
-    <div id="reminderModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="reminderModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-2xl flex flex-col max-h-[85vh]">
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-send"/></svg>作業繳交提醒</h2>
@@ -554,7 +588,7 @@
         </div>
     </div>
 
-    <div id="restoreModal" class="fixed inset-0 z-[97] bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="restoreModal" class="fixed inset-0 z-[97] bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-upload"/></svg>從備份還原</h2>
@@ -573,7 +607,7 @@
         </div>
     </div>
 
-    <div id="dayMissingModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black" onclick="if(event.target === this) closeDayMissingModal()">
+    <div id="dayMissingModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black" onclick="if(event.target === this) closeDayMissingModal()">
         <div class="glass-panel p-6 md:p-8 rounded-[1.5rem] w-11/12 max-w-2xl flex flex-col max-h-[88vh]">
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-calendar-check"/></svg>當日作業未交</h2>
@@ -589,7 +623,7 @@
         </div>
     </div>
 
-    <div id="printModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="printModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-printer"/></svg>列印缺交檢核表</h2>
@@ -609,7 +643,7 @@
         </div>
     </div>
 
-    <div id="exportModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden items-center justify-center font-black">
+    <div id="exportModal" class="fixed inset-0 z-50 bg-[#2a241d]/55 hidden modal-anim items-center justify-center font-black">
         <div class="glass-panel p-7 md:p-8 rounded-[1.5rem] w-11/12 max-w-lg">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-download"/></svg>匯出總表</h2>
@@ -906,6 +940,7 @@
         }
 
         // ===== 全屏訊息 =====
+        let broadcastLeaveTimer = 0;
         const BROADCAST_PRESETS = ['拿出聯絡簿，抄寫今天的作業', '回到座位，安靜等老師', '收拾書包，準備放學'];
         const BROADCAST_RECENT_KEY = 'broadcast_recent';
         // 只顯示當天送出的訊息，避免忘記關閉時隔天一開機又跳出舊訊息
@@ -953,16 +988,25 @@
         function renderBroadcast() {
             const active = broadcastActive(); const big = active && !isMobile();
             const overlay = document.getElementById('broadcastOverlay'); const banner = document.getElementById('broadcastBanner');
-            overlay.classList.toggle('hidden', !big); overlay.classList.toggle('flex', big);
+            const wasShown = overlay.classList.contains('flex');
+            if (big) {
+                clearTimeout(broadcastLeaveTimer); overlay.classList.remove('leaving');
+                overlay.classList.replace('hidden', 'flex');
+            } else if (wasShown && !overlay.classList.contains('leaving')) {
+                // 收起時圓形收回，動畫結束才真正隱藏
+                overlay.classList.add('leaving');
+                broadcastLeaveTimer = setTimeout(() => { overlay.classList.remove('leaving'); overlay.classList.replace('flex', 'hidden'); broadcastFx.stop(); }, 420);
+            }
             banner.classList.toggle('hidden', !active || big); banner.classList.toggle('flex', active && !big);
             document.getElementById('broadcastCurrent').classList.toggle('hidden', !active);
             if (!active) return;
             const d = new Date(broadcast.at);
             document.getElementById('broadcastMeta').textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 老師的訊息`;
-            document.getElementById('broadcastText').textContent = broadcast.text;
+            const textEl = document.getElementById('broadcastText');
+            if (textEl.textContent !== broadcast.text) { textEl.textContent = broadcast.text; restartAnim(textEl, 'text-rise'); }
             document.getElementById('broadcastBannerText').textContent = broadcast.text;
             document.getElementById('broadcastCurrentText').textContent = broadcast.text;
-            if (big) fitBroadcastText();
+            if (big) { fitBroadcastText(); broadcastFx.start(); }
         }
         // 二分搜尋能塞進畫面的最大字級
         function fitBroadcastText() {
@@ -976,12 +1020,108 @@
         }
         window.addEventListener('resize', () => renderBroadcast());
 
+        // ===== 動畫輔助 =====
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        function restartAnim(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+        // 狀態格彈跳：點擊後畫面會整個重繪，所以記下按鈕，重繪後找回同一格，從已經過的時間接著播
+        let popKey = null, popAt = 0;
+        document.addEventListener('click', (e) => {
+            const b = e.target.closest && e.target.closest('.state-btn');
+            if (b) { popKey = b.getAttribute('onclick'); popAt = performance.now(); requestAnimationFrame(replayPop); }
+        }, true);
+        function replayPop() {
+            if (!popKey) return;
+            const t = performance.now() - popAt; if (t > 480) { popKey = null; return; }
+            document.querySelectorAll('.state-btn').forEach(b => {
+                if (b.getAttribute('onclick') !== popKey || b.classList.contains('pop') || !b.offsetParent) return;
+                b.style.animationDelay = `-${Math.round(t)}ms`; b.classList.add('pop');
+                b.addEventListener('animationend', () => { b.classList.remove('pop'); b.style.animationDelay = ''; }, { once: true });
+            });
+        }
+
+        // 全屏訊息背景的漂浮圓點：等速直線移動，碰到邊緣、文字或彼此就彈開，所以永遠不會蓋到字
+        const broadcastFx = (() => {
+            const canvas = () => document.getElementById('broadcastFx');
+            let dots = [], walls = [], w = 0, h = 0, dpr = 1, raf = 0, last = 0, running = false;
+            const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+            function measureWalls() {
+                walls = [];
+                const overlay = document.getElementById('broadcastOverlay');
+                [document.getElementById('broadcastText'), overlay.querySelector('button'), document.getElementById('broadcastMeta')].forEach(el => {
+                    const r = el.getBoundingClientRect(); if (r.width) walls.push({ x: r.left - 12, y: r.top - 12, w: r.width + 24, h: r.height + 24 });
+                });
+            }
+            const hits = (x, y, r, b) => { const cx = clampN(x, b.x, b.x + b.w), cy = clampN(y, b.y, b.y + b.h); return (x - cx) ** 2 + (y - cy) ** 2 < r * r; };
+            function seed() {
+                const c = canvas(); w = innerWidth; h = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
+                c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+                measureWalls();
+                let sd = 9973; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+                const want = Math.round(clampN((w * h) / 60000, 10, 22)); dots = [];
+                for (let tries = 0; dots.length < want && tries < 1500; tries++) {
+                    const s = rnd() ** 1.8, r = 4 + s * 18;
+                    const x = r + rnd() * (w - 2 * r), y = r + rnd() * (h - 2 * r);
+                    if (walls.some(b => hits(x, y, r + 2, b)) || dots.some(o => (o.x - x) ** 2 + (o.y - y) ** 2 < (o.r + r + 4) ** 2)) continue;
+                    const ang = rnd() * Math.PI * 2, speed = 30 - s * 18;
+                    dots.push({ x, y, r, m: r * r, a: 0.22 + s * 0.16, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, cruise: speed });
+                }
+            }
+            function step(dt) {
+                for (const d of dots) {
+                    d.x += d.vx * dt; d.y += d.vy * dt;
+                    if (d.x < d.r) { d.x = d.r; d.vx = Math.abs(d.vx); } else if (d.x > w - d.r) { d.x = w - d.r; d.vx = -Math.abs(d.vx); }
+                    if (d.y < d.r) { d.y = d.r; d.vy = Math.abs(d.vy); } else if (d.y > h - d.r) { d.y = h - d.r; d.vy = -Math.abs(d.vy); }
+                    for (const b of walls) {
+                        const cx = clampN(d.x, b.x, b.x + b.w), cy = clampN(d.y, b.y, b.y + b.h);
+                        let nx = d.x - cx, ny = d.y - cy; const dist = Math.hypot(nx, ny);
+                        if (dist >= d.r) continue;
+                        if (dist === 0) { const up = d.y - b.y < b.y + b.h - d.y; nx = 0; ny = up ? -1 : 1; d.y = up ? b.y - d.r : b.y + b.h + d.r; }
+                        else { nx /= dist; ny /= dist; d.x += nx * (d.r - dist); d.y += ny * (d.r - dist); }
+                        const vn = d.vx * nx + d.vy * ny; if (vn < 0) { d.vx -= 2 * vn * nx; d.vy -= 2 * vn * ny; }
+                    }
+                }
+                for (let i = 0; i < dots.length; i++) for (let j = i + 1; j < dots.length; j++) {
+                    const a = dots[i], b = dots[j]; let dx = b.x - a.x, dy = b.y - a.y; const min = a.r + b.r, d2 = dx * dx + dy * dy;
+                    if (d2 >= min * min || d2 === 0) continue;
+                    const dist = Math.sqrt(d2); dx /= dist; dy /= dist; const over = min - dist, tot = a.m + b.m;
+                    a.x -= dx * over * (b.m / tot); a.y -= dy * over * (b.m / tot); b.x += dx * over * (a.m / tot); b.y += dy * over * (a.m / tot);
+                    const rel = (b.vx - a.vx) * dx + (b.vy - a.vy) * dy; if (rel >= 0) continue;
+                    const imp = (2 * rel) / tot; a.vx += imp * b.m * dx; a.vy += imp * b.m * dy; b.vx -= imp * a.m * dx; b.vy -= imp * a.m * dy;
+                }
+                for (const d of dots) { const sp = Math.hypot(d.vx, d.vy) || 1, f = 1 + (d.cruise / sp - 1) * Math.min(1, dt * 0.6); d.vx *= f; d.vy *= f; }
+            }
+            function draw() {
+                const g = canvas().getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+                g.fillStyle = '#2a1608'; // 暖黑色圓點，與橘子時鐘相同的配色
+                for (const d of dots) { g.globalAlpha = d.a; g.beginPath(); g.arc(d.x, d.y, d.r, 0, Math.PI * 2); g.fill(); }
+            }
+            function loop(now) {
+                if (!running) return;
+                if (now - last >= 33) { const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; step(dt / 2); step(dt / 2); draw(); }
+                raf = requestAnimationFrame(loop);
+            }
+            return {
+                // 每次顯示或版面變動都重新量測文字位置；文字放大動畫結束後再量一次
+                start() {
+                    // 已在跑（例如雲端資料更新觸發重繪）只重新量測文字範圍，不重排圓點，避免畫面跳動
+                    if (running) { measureWalls(); return; }
+                    seed(); draw();
+                    clearTimeout(this._t); this._t = setTimeout(measureWalls, 900);
+                    if (reduceMotion.matches) return;
+                    running = true; last = 0; raf = requestAnimationFrame(loop);
+                },
+                stop() { running = false; cancelAnimationFrame(raf); }
+            };
+        })();
+
         function switchTab(tab) {
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
             btnReminder.classList.toggle('hidden', tab !== 'task'); document.getElementById('btnDayMissing').classList.toggle('hidden', tab !== 'task'); document.getElementById('btnPrintChecklist').classList.toggle('hidden', tab !== 'task'); document.getElementById('taskLegend').classList.toggle('lg:flex', tab === 'task');
             document.getElementById('dynamicInputGroup').classList.toggle('hidden', tab === 'att');
+            restartAnim(document.getElementById({ task: 'taskView', clean: 'cleanView', grade: 'gradeView', att: 'attView' }[tab]), 'view-in');
             document.getElementById('seatColsField').classList.toggle('hidden', tab !== 'clean' && tab !== 'att');
             document.getElementById('btnTaskTab').className = `tab-btn ${tab === 'task' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnCleanTab').className = `tab-btn ${tab === 'clean' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnGradeTab').className = `tab-btn ${tab === 'grade' ? 'tab-active' : 'tab-inactive'}`; document.getElementById('btnAttTab').className = `tab-btn ${tab === 'att' ? 'tab-active' : 'tab-inactive'}`;
             renderAll();
@@ -1439,6 +1579,7 @@
             initSortable();
 
             if (pendingNextFocusIndex !== null) { let inputs = document.querySelectorAll('.grade-input'); if(inputs[pendingNextFocusIndex]) { inputs[pendingNextFocusIndex].focus(); inputs[pendingNextFocusIndex].select(); } pendingNextFocusIndex = null; } else if (currentFocusIndex !== null) { let el = document.querySelector(`.grade-input[data-index="${currentFocusIndex}"]`); if(el && document.activeElement !== el) { el.focus(); } }
+            replayPop();
         }
 
         function addItem() { 
