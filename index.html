@@ -341,6 +341,39 @@
         </div>
     </div>
 
+    <!-- 全屏訊息：寬螢幕（教室電腦）整頁顯示；手機只顯示底部提示列，方便遠端關閉 -->
+    <div id="broadcastOverlay" class="fixed inset-0 z-[120] hidden flex-col bg-[var(--paper)] text-[var(--ink)] font-black" role="alert">
+        <div class="flex justify-between items-center px-6 md:px-10 py-5 shrink-0">
+            <span id="broadcastMeta" class="text-xl font-bold text-[var(--ink-3)] tnum"></span>
+            <button onclick="closeBroadcast()" class="btn btn-quiet !h-12 !px-5 !text-base"><svg class="ic"><use href="#i-x"/></svg>關閉訊息</button>
+        </div>
+        <div id="broadcastBox" class="flex-1 min-h-0 flex items-center justify-center px-[6vw] pb-[8vh] overflow-hidden">
+            <p id="broadcastText" class="max-w-full text-center leading-[1.3] whitespace-pre-wrap break-words"></p>
+        </div>
+    </div>
+    <div id="broadcastBanner" class="fixed left-3 right-3 bottom-3 z-[90] hidden items-center gap-3 rounded-2xl bg-[var(--ink)] text-white px-4 py-3 shadow-lg" role="status">
+        <svg class="ic shrink-0 text-xl"><use href="#i-message"/></svg>
+        <div class="min-w-0 flex-1"><div class="text-[11px] font-bold opacity-70">教室螢幕顯示中</div><div id="broadcastBannerText" class="font-black truncate"></div></div>
+        <button onclick="closeBroadcast()" class="btn btn-accent btn-sm shrink-0">關閉</button>
+    </div>
+    <div id="broadcastModal" class="fixed inset-0 z-[96] bg-[#2a241d]/55 hidden items-center justify-center font-black" onclick="if(event.target === this) closeBroadcastModal()">
+        <div class="glass-panel p-6 md:p-8 rounded-[1.5rem] w-11/12 max-w-xl">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-2xl font-black text-[var(--ink)] flex items-center gap-2.5"><svg class="ic text-[var(--accent)]"><use href="#i-message"/></svg>全屏訊息</h2>
+                <button onclick="closeBroadcastModal()" class="btn btn-quiet btn-icon" aria-label="關閉"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <p class="text-sm font-bold text-[var(--ink-3)] mb-4">送出後，開著本系統的教室電腦會整頁顯示這則訊息；在任何一台裝置按「關閉」，所有螢幕一起收起。</p>
+            <div id="broadcastCurrent" class="hidden mb-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] px-4 py-3">
+                <div class="text-xs font-bold text-[var(--ink-3)] mb-1">目前顯示中</div>
+                <div class="flex items-center gap-3"><div id="broadcastCurrentText" class="flex-1 min-w-0 truncate text-[var(--ink)]"></div><button onclick="closeBroadcast()" class="btn btn-dark btn-sm shrink-0">關閉訊息</button></div>
+            </div>
+            <textarea id="broadcastInput" maxlength="200" placeholder="例如：拿出聯絡簿，抄寫今天的作業" class="w-full h-32 p-4 border border-[var(--line)] rounded-xl outline-none focus:border-[var(--focus)] resize-none text-xl font-bold text-[var(--ink)] bg-white leading-relaxed"></textarea>
+            <div class="mt-3 text-xs font-bold text-[var(--ink-3)]">常用／最近送出（點一下帶入）</div>
+            <div id="broadcastPicks" class="mt-2 flex flex-wrap gap-2"></div>
+            <div class="mt-5 flex justify-end"><button onclick="sendBroadcast()" class="btn btn-accent !h-12 !px-8 !text-base"><svg class="ic"><use href="#i-send"/></svg>送出全屏</button></div>
+        </div>
+    </div>
+
     <!-- 宣導看板：置中彈窗，方便投影/放大清楚顯示 -->
     <div id="announceDrawer" class="fixed inset-0 z-[95] bg-[#2a241d]/55 hidden items-center justify-center font-black">
         <div class="glass-panel p-8 md:p-10 rounded-[1.75rem] w-11/12 max-w-3xl flex flex-col max-h-[85vh]">
@@ -369,7 +402,8 @@
                 <button onclick="downloadBackup()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-download"/></svg>下載備份</button>
                 <button onclick="document.getElementById('restoreFileInput').click()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-upload"/></svg>還原備份</button>
                 <input type="file" id="restoreFileInput" accept=".json,application/json" class="hidden" onchange="handleRestoreFile(this)">
-                <button onclick="toggleExamClock()" class="btn btn-accent btn-sm sm:!h-9 sm:!text-sm"><svg class="ic"><use href="#i-clock"/></svg>考試大鐘</button>
+                <button onclick="toggleExamClock()" class="btn btn-accent btn-sm sm:!h-9 sm:!text-sm"><svg class="ic"><use href="#i-clock"/></svg><span class="max-sm:hidden">考試</span>大鐘</button>
+                <button id="btnBroadcast" onclick="openBroadcastModal()" class="btn btn-accent btn-sm sm:!h-9 sm:!text-sm" title="在教室螢幕整頁顯示訊息" aria-label="全屏訊息"><svg class="ic"><use href="#i-message"/></svg><span class="max-sm:hidden">全屏訊息</span></button>
                 <button onclick="openExportModal()" class="btn btn-on-dark btn-sm sm:!h-9 sm:!text-sm max-sm:hidden"><svg class="ic"><use href="#i-download"/></svg>匯出總表</button>
                 <button onclick="logout()" class="btn btn-on-dark is-danger btn-sm sm:!h-9 sm:!text-sm" aria-label="登出"><svg class="ic"><use href="#i-logout"/></svg><span class="hidden md:inline">登出</span></button>
             </div>
@@ -620,6 +654,7 @@
         let currentGradeSubject = '國語';
         let grades = { "國語": { categories: [], scores: {} }, "數學": { categories: [], scores: {} } };
         let taskDates = {}; let studentPasswords = {};
+        let broadcast = null; // 全屏訊息 { text, on, at }，存在 users/{uid}/broadcast
 
         let currentTab = 'task'; const attLabels = ["出席", "事假", "病假", "公假", "喪假", "遲到"];
         let isHidePerfect = false;
@@ -662,7 +697,7 @@
                 }
             }); grades = safeGrades;
 
-            const data = { tasks, taskDates, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, grades, studentPasswords, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value };
+            const data = { tasks, taskDates, globalTaskData, historyAtt, dailyNotes, announcements, cleanTasks, historyClean, grades, studentPasswords, examSchedule: examScheduleStr, studentCount: document.getElementById('studentCount').value, broadcast };
             // 雲端資料讀到之前不寫入，避免以空白的本機狀態覆蓋整份班級資料
             if (!cloudLoaded) { console.warn('尚未讀取到雲端資料，暫不儲存'); return; }
             const ref = db.ref('users/' + currentUser.uid);
@@ -754,6 +789,7 @@
             } else {
                 currentUser = null; document.getElementById('loginScreen').style.display = 'flex'; setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
                 document.getElementById('mainApp').classList.add('opacity-0', 'pointer-events-none');
+                broadcast = null; renderBroadcast();
             }
         });
 
@@ -843,6 +879,7 @@
                     
                     tasks = data.tasks || []; globalTaskData = data.globalTaskData || {}; taskDates = data.taskDates || {}; studentPasswords = data.studentPasswords || {}; 
                     historyAtt = data.historyAtt || {}; dailyNotes = data.dailyNotes || {}; announcements = data.announcements || ""; cleanTasks = data.cleanTasks || []; historyClean = data.historyClean || {};
+                    broadcast = data.broadcast || null; renderBroadcast();
                     
                     let oldGrades = data.grades || {};
                     ["國語", "數學"].forEach(sub => {
@@ -867,6 +904,77 @@
                 renderSyncStatus(); syncIcon.style.opacity = '0.5'; setTimeout(() => syncIcon.style.opacity = '1', 200);
             });
         }
+
+        // ===== 全屏訊息 =====
+        const BROADCAST_PRESETS = ['拿出聯絡簿，抄寫今天的作業', '回到座位，安靜等老師', '收拾書包，準備放學'];
+        const BROADCAST_RECENT_KEY = 'broadcast_recent';
+        // 只顯示當天送出的訊息，避免忘記關閉時隔天一開機又跳出舊訊息
+        function broadcastActive() {
+            if (!currentUser || !broadcast || !broadcast.on || !broadcast.text) return false;
+            const d = new Date(broadcast.at || 0); const day = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            return day === getLocalDateString();
+        }
+        function writeBroadcast(value) {
+            if (!currentUser) return;
+            broadcast = value; renderBroadcast();
+            trackWrite(db.ref(`users/${currentUser.uid}/broadcast`).set(value));
+        }
+        function sendBroadcast() {
+            const input = document.getElementById('broadcastInput'); const text = input.value.trim().slice(0, 200);
+            if (!text) { input.focus(); return; }
+            rememberBroadcast(text);
+            writeBroadcast({ text, on: true, at: Date.now() });
+            closeBroadcastModal();
+        }
+        function closeBroadcast() {
+            if (!broadcast || !broadcast.on) return;
+            writeBroadcast({ ...broadcast, on: false });
+        }
+        function loadBroadcastRecent() { try { return JSON.parse(localStorage.getItem(BROADCAST_RECENT_KEY)) || []; } catch (e) { return []; } }
+        function rememberBroadcast(text) {
+            const list = [text, ...loadBroadcastRecent().filter(t => t !== text)].slice(0, 6);
+            try { localStorage.setItem(BROADCAST_RECENT_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+        function openBroadcastModal() {
+            const picks = [...loadBroadcastRecent(), ...BROADCAST_PRESETS].filter((t, i, a) => a.indexOf(t) === i).slice(0, 8);
+            const box = document.getElementById('broadcastPicks'); box.innerHTML = '';
+            picks.forEach(t => {
+                const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-quiet btn-sm max-w-full'; b.title = t;
+                const label = document.createElement('span'); label.className = 'truncate'; label.textContent = t.replace(/\s*\n\s*/g, ' / '); b.appendChild(label);
+                b.onclick = () => { const input = document.getElementById('broadcastInput'); input.value = t; input.focus(); };
+                box.appendChild(b);
+            });
+            document.getElementById('broadcastInput').value = '';
+            renderBroadcast();
+            document.getElementById('broadcastModal').classList.replace('hidden', 'flex');
+            if (!isMobile()) document.getElementById('broadcastInput').focus();
+        }
+        function closeBroadcastModal() { document.getElementById('broadcastModal').classList.replace('flex', 'hidden'); }
+        function renderBroadcast() {
+            const active = broadcastActive(); const big = active && !isMobile();
+            const overlay = document.getElementById('broadcastOverlay'); const banner = document.getElementById('broadcastBanner');
+            overlay.classList.toggle('hidden', !big); overlay.classList.toggle('flex', big);
+            banner.classList.toggle('hidden', !active || big); banner.classList.toggle('flex', active && !big);
+            document.getElementById('broadcastCurrent').classList.toggle('hidden', !active);
+            if (!active) return;
+            const d = new Date(broadcast.at);
+            document.getElementById('broadcastMeta').textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 老師的訊息`;
+            document.getElementById('broadcastText').textContent = broadcast.text;
+            document.getElementById('broadcastBannerText').textContent = broadcast.text;
+            document.getElementById('broadcastCurrentText').textContent = broadcast.text;
+            if (big) fitBroadcastText();
+        }
+        // 二分搜尋能塞進畫面的最大字級
+        function fitBroadcastText() {
+            const box = document.getElementById('broadcastBox'); const el = document.getElementById('broadcastText');
+            const cs = getComputedStyle(box);
+            const w = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            const h = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+            let lo = 24, hi = Math.max(24, Math.min(w, h * 1.2));
+            while (hi - lo > 2) { const mid = (lo + hi) / 2; el.style.fontSize = mid + 'px'; if (el.scrollHeight <= h && el.scrollWidth <= w) lo = mid; else hi = mid; }
+            el.style.fontSize = lo + 'px';
+        }
+        window.addEventListener('resize', () => renderBroadcast());
 
         function switchTab(tab) {
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
