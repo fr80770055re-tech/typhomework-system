@@ -252,20 +252,20 @@
         .btn { transition: background-color .15s, border-color .15s, color .15s, transform .35s var(--ease-out); }
         .btn:active { transform: scale(.95); transition-duration: .08s; }
         .tab-btn { transition: color .25s var(--ease-out), background-color .25s var(--ease-out); }
-        /* 彈窗：背景淡入，面板由下方浮起 */
+        /* 彈窗：背景淡入，面板由右側橫向滑入 */
         .modal-anim.flex { animation: scrim-in .35s var(--ease-out) backwards; }
         .modal-anim.flex > .glass-panel { animation: panel-in .55s var(--ease-out) backwards; }
         @keyframes scrim-in { from { opacity: 0; } }
-        @keyframes panel-in { from { opacity: 0; transform: translateY(28px) scale(.96); } }
+        @keyframes panel-in { from { opacity: 0; transform: translateX(48px) scale(.96); } }
         /* 宣導看板：條目一則接一則滑入 */
         #announceDrawer.flex #announceList > li { animation: row-in .6s var(--ease-out) backwards; }
         #announceDrawer.flex #announceList > li:nth-child(1) { animation-delay: .12s; } #announceDrawer.flex #announceList > li:nth-child(2) { animation-delay: .18s; }
         #announceDrawer.flex #announceList > li:nth-child(3) { animation-delay: .24s; } #announceDrawer.flex #announceList > li:nth-child(4) { animation-delay: .30s; }
         #announceDrawer.flex #announceList > li:nth-child(5) { animation-delay: .36s; } #announceDrawer.flex #announceList > li:nth-child(n+6) { animation-delay: .42s; }
         @keyframes row-in { from { opacity: 0; transform: translateX(36px); } }
-        /* 切換分頁：內容輕輕浮入（只用 backwards，結束後不留 transform，避免影響 sticky／fixed） */
+        /* 切換分頁：內容依分頁方向橫向滑入（往右邊的分頁從右側進來，往左則從左側；只用 backwards，結束後不留 transform，避免影響 sticky／fixed） */
         .view-in { animation: view-in .45s var(--ease-out) backwards; }
-        @keyframes view-in { from { opacity: 0; transform: translateY(12px); } }
+        @keyframes view-in { from { opacity: 0; transform: translateX(var(--view-dx, 40px)); } }
         /* 狀態格：點擊後彈一下 */
         .state-btn.pop { animation: state-pop .5s var(--ease-out); }
         @keyframes state-pop { 0% { transform: scale(.84); } 45% { transform: scale(1.07); } 100% { transform: scale(1); } }
@@ -275,9 +275,9 @@
         @keyframes circle-open { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
         @keyframes circle-close { from { clip-path: circle(75% at 50% 50%); } to { clip-path: circle(0% at 50% 50%); } }
         .text-rise { animation: text-rise .8s var(--ease-out) .35s backwards; }
-        @keyframes text-rise { from { opacity: 0; transform: translateY(32px); } }
+        @keyframes text-rise { from { opacity: 0; transform: translateX(64px); } }
         #broadcastBanner.flex { animation: banner-in .5s var(--ease-out) backwards; }
-        @keyframes banner-in { from { opacity: 0; transform: translateY(24px); } }
+        @keyframes banner-in { from { opacity: 0; transform: translateX(48px); } }
         #broadcastFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
         #broadcastOverlay > :not(canvas) { position: relative; z-index: 1; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0s !important; } }
@@ -1157,6 +1157,8 @@
         })();
 
         function switchTab(tab) {
+            const tabOrder = ['task', 'clean', 'grade', 'att'];
+            document.documentElement.style.setProperty('--view-dx', tabOrder.indexOf(tab) < tabOrder.indexOf(currentTab) ? '-40px' : '40px');
             currentTab = tab; document.getElementById('taskView').classList.toggle('hidden', tab !== 'task'); document.getElementById('cleanView').classList.toggle('hidden', tab !== 'clean'); document.getElementById('gradeView').classList.toggle('hidden', tab !== 'grade'); document.getElementById('attView').classList.toggle('hidden', tab !== 'att');
             const inputField = document.getElementById('itemName'); const subjectSwitch = document.getElementById('gradeSubjectSwitch'); const btnHidePerfect = document.getElementById('btnHidePerfect'); const btnShowHiddenStudents = document.getElementById('btnShowHiddenStudents'); const btnAdd = document.getElementById('btnAddItem'); const btnReminder = document.getElementById('btnReminder');
             if(tab === 'task') { inputField.placeholder = "新增作業名稱..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.remove('hidden'); btnShowHiddenStudents.classList.toggle('hidden', manuallyHiddenTaskStudents.size === 0); btnAdd.innerText = '新增'; } else if(tab === 'clean') { inputField.placeholder = "新增檢核項目..."; subjectSwitch.classList.add('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '新增'; } else if(tab === 'grade') { inputField.placeholder = "輸入主項目(如數學習作)"; subjectSwitch.classList.remove('hidden'); btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); btnAdd.innerText = '加主項目'; } else { btnHidePerfect.classList.add('hidden'); btnShowHiddenStudents.classList.add('hidden'); }
