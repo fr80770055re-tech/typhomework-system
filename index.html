@@ -136,6 +136,7 @@
 
         .clean-0 { background: var(--st-missing-bg); color: var(--st-missing-ink); border-color: var(--st-missing-line); }
         .clean-1 { background: var(--st-clean-done-bg); color: var(--st-clean-done-ink); border-color: var(--st-clean-done-bg); }
+        .clean-off { background: var(--surface-2); color: var(--ink-3); border: 1.5px dashed var(--line); }
 
         /* 座位網格（潔牙掃地、出缺勤）：固定欄數，每位學生的位置不會隨視窗寬度跑動，
            可對應教室實際座位。窄螢幕才強制降欄（!important 蓋過 inline 偏好值）。 */
@@ -1499,34 +1500,45 @@
         }
         function seatGrid(cells) { return `<div class="seat-grid" style="--seat-cols:${getSeatCols()}">${cells}</div>`; }
 
+        // 出缺勤聯動：當天請假（事假、病假、公假、喪假）且還沒檢核完成的學生，潔牙掃地顯示假別，不列入應檢核人數
+        // 只在畫面與匯出時推算，不寫入 historyClean；出缺勤改回出席，就恢復原本的檢核狀態
+        function cleanLeave(date, sid) { const a = (historyAtt[date] || {})[sid] || 0; return a >= 1 && a <= 4 ? a : 0; }
+        function cleanExcused(date, sid, name) { return cleanLeave(date, sid) > 0 && (((historyClean[date] || {})[sid] || {})[name] || 0) !== 1; }
+
         function focusCleanAt(i) { focusedCleanName = cleanTasks[i]; renderAll(); }
         function cycleFocusedClean(sid) { cycleClean(sid, focusedCleanName); }
         function completeAllFocusedClean() { completeAllClean(focusedCleanName); }
         function deleteFocusedClean() { deleteCleanTask(cleanTasks.indexOf(focusedCleanName)); }
 
         function renderCleanFocus(count, todaysClean) {
-            const host = document.getElementById('cleanFocus');
+            const host = document.getElementById('cleanFocus'); const date = document.getElementById('currentDate').value;
             if (cleanTasks.length === 0) { host.innerHTML = `<div class="empty-note">還沒有檢核項目。在上方輸入項目名稱後按「新增」。</div>`; return; }
             if (!cleanTasks.includes(focusedCleanName)) focusedCleanName = cleanTasks[0];
             const t = focusedCleanName;
 
             const chips = cleanTasks.map((name, i) => {
-                let done = 0;
-                for (let s = 1; s <= count; s++) if (((todaysClean[s] || {})[name] || 0) === 1) done++;
-                const allDone = count > 0 && done === count;
-                return `<div class="focus-chip ${name === t ? 'is-active' : ''} ${allDone ? 'is-complete' : ''}"><span class="drag-handle" title="拖曳排序">${ic('grip')}</span><button class="focus-chip-btn" onclick="focusCleanAt(${i})"><span>${name}</span><span class="focus-chip-count">${allDone ? '全過關' : done + '/' + count}</span></button></div>`;
+                let done = 0; let need = 0;
+                for (let s = 1; s <= count; s++) { if (cleanExcused(date, s, name)) continue; need++; if (((todaysClean[s] || {})[name] || 0) === 1) done++; }
+                const allDone = count > 0 && done === need;
+                return `<div class="focus-chip ${name === t ? 'is-active' : ''} ${allDone ? 'is-complete' : ''}"><span class="drag-handle" title="拖曳排序">${ic('grip')}</span><button class="focus-chip-btn" onclick="focusCleanAt(${i})"><span>${name}</span><span class="focus-chip-count">${allDone ? '全過關' : done + '/' + need}</span></button></div>`;
             }).join('');
 
             const lbls = ["未完成", "完成"];
-            let cells = '';
+            let cells = ''; let excused = 0;
             for (let i = 1; i <= count; i++) {
                 const s = (todaysClean[i] && todaysClean[i][t]) || 0;
+                if (cleanExcused(date, i, t)) {
+                    excused++;
+                    cells += `<div class="seat-cell"><button onclick="cycleFocusedClean(${i})" class="state-btn clean-off" title="今天${attLabels[cleanLeave(date, i)]}，不列入檢核；若有完成仍可點一下標記"><span class="btn-idx">${i}</span><span class="btn-text">${attLabels[cleanLeave(date, i)]}</span></button></div>`;
+                    continue;
+                }
                 cells += `<div class="seat-cell"><button onclick="cycleFocusedClean(${i})" class="state-btn clean-${s}"><span class="btn-idx">${i}</span><span class="btn-text">${lbls[s]}</span></button></div>`;
             }
 
             setFocusHost(host, `<div class="chip-row" id="cleanChips">${chips}</div>
                 <div class="focus-bar">
                     <div class="focus-title">${t}</div>
+                    ${excused ? `<span class="focus-meta">依出缺勤：請假 ${excused} 人不列入檢核</span>` : ''}
                     <div class="focus-actions">
                         <button onclick="completeAllFocusedClean()" class="btn btn-quiet btn-sm">${ic('check')}全班過關</button>
                         <button onclick="deleteFocusedClean()" class="btn btn-danger-quiet btn-sm">${ic('x')}刪除此項目</button>
@@ -1654,7 +1666,14 @@
         function completeAllTask(taskName) { if(confirm(`確定將【${taskName}】設為全班完成？`)) { const count = parseInt(document.getElementById('studentCount').value) || 0; for(let i = 1; i <= count; i++) { if(!globalTaskData[i]) globalTaskData[i] = {}; globalTaskData[i][taskName] = 2; } saveToCloud(); } }
         function cycleClean(id, t) { const d = document.getElementById('currentDate').value; if(!historyClean[d]) historyClean[d] = {}; if(!historyClean[d][id]) historyClean[d][id] = {}; historyClean[d][id][t] = ((historyClean[d][id][t]||0)+1)%2; saveToCloud(); }
         function deleteCleanTask(i) { if(confirm('確定移除此檢核項目？')) { cleanTasks.splice(i, 1); saveToCloud(); } }
-        function completeAllClean(taskName) { if(confirm(`確定將本日【${taskName}】設為全班過關？`)) { const count = parseInt(document.getElementById('studentCount').value) || 0; const d = document.getElementById('currentDate').value; if(!historyClean[d]) historyClean[d] = {}; for(let i = 1; i <= count; i++) { if(!historyClean[d][i]) historyClean[d][i] = {}; historyClean[d][i][taskName] = 1; } saveToCloud(); } }
+        function completeAllClean(taskName) {
+            const count = parseInt(document.getElementById('studentCount').value) || 0; const d = document.getElementById('currentDate').value;
+            const skip = []; for (let i = 1; i <= count; i++) if (cleanExcused(d, i, taskName)) skip.push(i);
+            if (!confirm(`確定將本日【${taskName}】設為全班過關？${skip.length ? `\n請假的 ${skip.join('、')} 號不會被標記。` : ''}`)) return;
+            if(!historyClean[d]) historyClean[d] = {};
+            for(let i = 1; i <= count; i++) { if (skip.includes(i)) continue; if(!historyClean[d][i]) historyClean[d][i] = {}; historyClean[d][i][taskName] = 1; }
+            saveToCloud();
+        }
         function cycleAttendance(id) { const d = document.getElementById('currentDate').value; if(!historyAtt[d]) historyAtt[d] = {}; historyAtt[d][id] = ((historyAtt[d][id]||0)+1)%6; saveToCloud(); }
 
         function getDefaultSchoolYearRange() {
@@ -1779,7 +1798,7 @@
             const rangedTasks = tasks.filter(t => !taskDates[t] || inRange(taskDates[t]));
             let taskRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; rangedTasks.forEach(t => row[t] = ["未交", "待訂正", "已完成", "批改中"][(globalTaskData[i] && globalTaskData[i][t]) || 0]); taskRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskRows), "作業總表");
             let attRows = []; const allDates = Object.keys(historyAtt).filter(inRange).sort(); for (let i = 1; i <= count; i++) { let row = { '座號': i }; let stats = { 1:0, 2:0, 3:0, 4:0, 5:0 }; allDates.forEach(d => { const s = historyAtt[d][i] || 0; row[d] = attLabels[s]; if(s > 0) stats[s]++; }); row['事假_總計'] = stats[1]; row['病假_總計'] = stats[2]; row['公假_總計'] = stats[3]; row['喪假_總計'] = stats[4]; row['遲到_總計'] = stats[5]; attRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "出缺勤總表");
-            const cleanDates = Object.keys(historyClean).filter(inRange).sort(); cleanTasks.forEach(taskName => { let cleanRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; cleanDates.forEach(d => { const s = (historyClean[d][i] && historyClean[d][i][taskName]) || 0; row[d] = s === 1 ? "完成" : "未完成"; }); cleanRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`); });
+            const cleanDates = Object.keys(historyClean).filter(inRange).sort(); cleanTasks.forEach(taskName => { let cleanRows = []; for (let i = 1; i <= count; i++) { let row = { '座號': i }; cleanDates.forEach(d => { const s = (historyClean[d][i] && historyClean[d][i][taskName]) || 0; row[d] = s === 1 ? "完成" : cleanLeave(d, i) ? attLabels[cleanLeave(d, i)] : "未完成"; }); cleanRows.push(row); } XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cleanRows), `${taskName}檢核紀錄`); });
             ["國語", "數學"].forEach(subject => {
                 let gradeRows = []; const subData = grades[subject];
                 for(let i=1; i<=count; i++) { let row = { '座號': i }; let tScore = 0, tWeight = 0; subData.categories.forEach(cat => { let cScore = 0, cWeight = 0; cat.exams.forEach(ex => { let key = `${cat.name}_${ex.name}`; let val = subData.scores[i]?.[key]; row[`${cat.name}-${ex.name}`] = val !== undefined ? val : ""; if(val !== undefined && val !== "") { cScore += Number(val) * ex.weight; cWeight += ex.weight; } }); if(cWeight > 0) { let cAvg = cScore / cWeight; row[`${cat.name}小計平均`] = cAvg.toFixed(1); tScore += cAvg * cat.weight; tWeight += cat.weight; } else { row[`${cat.name}小計平均`] = ""; } }); row['學期總加權平均'] = tWeight > 0 ? (tScore / tWeight).toFixed(1) : ""; gradeRows.push(row); }
